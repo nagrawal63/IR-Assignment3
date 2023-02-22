@@ -9,7 +9,7 @@ class InvertedIndex:
         self.inverted_index_files = []
 
     # Add a document to inverted index
-    def addDocToInvertedIndex(self, docId, tokens):
+    def addDocToInvertedIndex(self, docId, tokens, important_words):
         # Calculate tokens to number of occurences hashmap
         tokens_hashmap = {}
         for token in tokens:
