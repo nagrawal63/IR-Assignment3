@@ -47,43 +47,61 @@ class InvertedIndex:
 
     def mergeInvertedIndexFiles(self):
         def mergeTwoFiles(file1, file2, finalFileName):
-            data1 = self.loadInvertedIndex(file1)
-            data2 = self.loadInvertedIndex(file2)
-            tokens1 = list(data1.keys()); tokens2 = list(data2.keys())
-            resultJSON = []
-            filePtr1 = 0; filePtr2 = 0; size1 = len(data1); size2 = len(data2) 
+            filePtr1 = self.loadInvertedIndex(file1)
+            filePtr2 = self.loadInvertedIndex(file2)
+            data1 = next(filePtr1); data2 = next(filePtr2)
+            tokens1 = list(data1.keys())[0]; tokens2 = list(data2.keys())[0]
+            file1NotEOD = True ; file2NotEOD= True
 
-            while filePtr1 < size1 and filePtr2 < size2:
-                if tokens1[filePtr1] == tokens2[filePtr2]:
-                    resultDict = {tokens1[filePtr1]: list()}
-                    resultDict[tokens1[filePtr1]].extend(data1[tokens1[filePtr1]])
-                    resultDict[tokens1[filePtr1]].extend(data2[tokens2[filePtr2]])
-                    resultJSON.append(resultDict)
-                    filePtr1 += 1; filePtr2 += 1
-                elif tokens1[filePtr1] < tokens2[filePtr2]:
-                    resultDict = {tokens1[filePtr1]: list()}
-                    resultDict[tokens1[filePtr1]].extend(data1[tokens1[filePtr1]])
-                    resultJSON.append(resultDict)
-                    filePtr1 += 1
+            f = open(finalFileName, 'w', encoding='utf-8')
+            while file1NotEOD  and file2NotEOD:
+                if tokens1 == tokens2:
+                    resultDict = {tokens1: list()}
+                    resultDict[tokens1].extend(data1[tokens1])
+                    resultDict[tokens1].extend(data2[tokens2])
+                    try:
+                        data1 = next(filePtr1);tokens1 = list(data1.keys())[0]
+                    except StopIteration:
+                        file1NotEOD = False
+                    try:
+                        data2 = next(filePtr2);tokens2 = list(data2.keys())[0]
+                    except StopIteration:
+                        file2NotEOD = False
+
+                elif tokens1 < tokens2:
+                    resultDict = {tokens1: list()}
+                    resultDict[tokens1].extend(data1[tokens1])
+                    try:
+                        data1 = next(filePtr1);tokens1 = list(data1.keys())[0]
+                    except StopIteration:
+                        file1NotEOD = False
                 else:
-                    resultDict = {tokens2[filePtr2]: list()}
-                    resultDict[tokens2[filePtr2]].extend(data2[tokens2[filePtr2]])
-                    resultJSON.append(resultDict)
-                    filePtr2 += 1
+                    resultDict = {tokens2: list()}
+                    resultDict[tokens2].extend(data2[tokens2])
+                    try:
+                        data2 = next(filePtr2);tokens2 = list(data2.keys())[0]
+                    except StopIteration:
+                        file2NotEOD = False
+                json_record = json.dumps(resultDict, ensure_ascii=False, cls=CustomEncoder)
+                f.write(json_record + '\n')
 
-            while filePtr1 < size1:
-                resultJSON.append({tokens1[filePtr1]: data1[tokens1[filePtr1]]})
-                filePtr1 += 1
+            while file1NotEOD:
+                json_record = json.dumps({tokens1: data1[tokens1]}, ensure_ascii=False, cls=CustomEncoder)
+                f.write(json_record + '\n')
+                try:
+                    data1 = next(filePtr1);tokens1 = list(data1.keys())[0]
+                except StopIteration:
+                    file1NotEOD = False
 
-            while filePtr2 < size2:
-                resultJSON.append({tokens2[filePtr2]: data2[tokens2[filePtr2]]})
-                filePtr2 += 1
-            
-            with open(finalFileName, 'w', encoding='utf-8') as f:
-                for line in resultJSON:
-                    json_record = json.dumps(line, ensure_ascii=False, cls=CustomEncoder)
-                    f.write(json_record + '\n')
+            while file2NotEOD:
+                json_record = json.dumps({tokens2: data2[tokens2]}, ensure_ascii=False, cls=CustomEncoder)
+                f.write(json_record + '\n')
+                try:
+                    data2 = next(filePtr2);tokens2 = list(data2.keys())[0]
+                except StopIteration:
+                    file2NotEOD = False
 
+            f.close()
         
         while(len(self.inverted_index_files) != 1):
             file1 = self.inverted_index_files.pop(0)
@@ -100,13 +118,14 @@ class InvertedIndex:
     into a dictionary
     '''
     def loadInvertedIndex(self, filePath):
-        data = {}
+
         with open(filePath, 'r', encoding='utf-8') as f:
             for line in f:
+                data = {}
                 line_data = json.loads(line.rstrip('\n|\r'))
                 token = list(line_data.keys())[0]
                 data[token] = [Postings.from_json(value) for value in line_data[token]]
-        return data
+                yield data
     
     def addTfIdfScores(self, filePath: str, total_docs):
         def calculateTfIdfScore(token_freq, token_docs, total_docs):
