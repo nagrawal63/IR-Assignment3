@@ -7,8 +7,10 @@ import json
 from urllib.parse import urldefrag
 import re
 from InvertedIndex import InvertedIndex
+from PageQualFeature import PageQualFeature
 
 inverted_index = InvertedIndex()
+page_qual_feature = PageQualFeature()
 directory_name = "DEV"
 urls_visited = set()
 URL_to_docID_map = {}
@@ -37,6 +39,8 @@ def process_data(file_names):
                 important_words = find_important_words(soup)
                 tokens = tokenize_content(soup.get_text())
                 inverted_index.addDocToInvertedIndex(docId= docID , tokens=tokens , important_words = important_words)
+                hls = page_qual_feature._extract_hyperlinks(soup)
+                page_qual_feature._build_pagerankdb(extracted_link,hls)
 
 
 def find_important_words(soup):
@@ -65,3 +69,7 @@ if __name__ == "__main__":
     process_data(file_names)
     end_time = time.time()
     print("Total execution time: " + str(end_time - start_time))
+    print("[START]Cal pageRank")
+    page_qual_feature.cal_pagerank()
+    print(f"[END] Cal pageRank")
+    page_qual_feature.save_pagefeat(URL_to_docID_map)
