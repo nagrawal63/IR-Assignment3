@@ -8,12 +8,15 @@ from urllib.parse import urldefrag
 import re
 from InvertedIndex import InvertedIndex
 from PageQualFeature import PageQualFeature
+import sys
 
 inverted_index = InvertedIndex()
 page_qual_feature = PageQualFeature()
 directory_name = "DEV"
 urls_visited = set()
 URL_to_docID_map = {}
+
+BATCH_SIZE = 2000
 
 def get_file_names():
     file_names = []
@@ -24,7 +27,10 @@ def get_file_names():
 
 def process_data(file_names):
     docID = 1
+    batch_size_processed = 0
     for file in file_names:
+        sys.stdout.write("\rProcessing file " + str(docID))
+        sys.stdout.flush()
         if file[len(file)-4:len(file)] == "json":
             with open(file) as f:
                 file_dict = json.load(f)
@@ -41,6 +47,11 @@ def process_data(file_names):
                 inverted_index.addDocToInvertedIndex(docId= docID , tokens=tokens , important_words = important_words)
                 hls = page_qual_feature._extract_hyperlinks(soup)
                 page_qual_feature._build_pagerankdb(extracted_link,hls)
+                batch_size_processed+=1
+        if batch_size_processed >= BATCH_SIZE:
+            inverted_index.offloadIndex()
+            batch_size_processed = 0
+    inverted_index.mergeInvertedIndexFiles()
 
 
 def find_important_words(soup):
@@ -51,7 +62,7 @@ def find_important_words(soup):
     for sub_text in text:
         if sub_text.parent.name in tags:
             tokens = tokenize_content(sub_text)
-        final_tokens += tokens
+        final_tokens += (tokens)
     return set(final_tokens)
 
 
@@ -69,7 +80,10 @@ if __name__ == "__main__":
     process_data(file_names)
     end_time = time.time()
     print("Total execution time: " + str(end_time - start_time))
-    print("[START]Cal pageRank")
-    page_qual_feature.cal_pagerank()
-    print(f"[END] Cal pageRank")
-    page_qual_feature.save_pagefeat(URL_to_docID_map)
+    # print("[START]Cal pageRank")
+    # page_qual_feature.cal_pagerank()
+    # print(f"[END] Cal pageRank")
+    # page_qual_feature.save_pagefeat(URL_to_docID_map)
+
+    # index = inverted_index.loadInvertedIndex("index/initial_0.json")
+    # print(str(index["such"][0].docId))
