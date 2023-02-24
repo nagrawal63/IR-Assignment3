@@ -9,6 +9,8 @@ import re
 from InvertedIndex import InvertedIndex
 from PageQualFeature import PageQualFeature
 import sys
+from InvertedIndex import ImportanceEnum
+from collections import defaultdict
 
 inverted_index = InvertedIndex()
 page_qual_feature = PageQualFeature()
@@ -42,9 +44,10 @@ def process_data(file_names):
                 URL_to_docID_map[extracted_link] = docID
                 docID += 1
                 soup = BeautifulSoup(file_dict['content'], features="lxml")
-                important_words = find_important_words(soup)
+                important_words_set, important_words_tags = find_important_words(soup)
                 tokens = tokenize_content(soup.get_text())
-                inverted_index.addDocToInvertedIndex(docId= docID , tokens=tokens , important_words = important_words)
+                inverted_index.addDocToInvertedIndex(docId= docID , tokens=tokens , important_words_set = important_words_set,
+                                                     important_words_tags = important_words_tags)
                 hls = page_qual_feature._extract_hyperlinks(soup)
                 page_qual_feature._build_pagerankdb(extracted_link,hls)
                 batch_size_processed+=1
@@ -56,21 +59,32 @@ def process_data(file_names):
 
 def find_important_words(soup):
     tags = ["title","h1", "h2", "h3", "b"]
+    tags_map = {'title' : ImportanceEnum.TITLE ,'h1' :ImportanceEnum.H1 , 'h2' :ImportanceEnum.H2, 'h3' :ImportanceEnum.H3,
+                'b' : ImportanceEnum.B}
+
+    impWords_tags_map= defaultdict()
     tokens = []
     final_tokens = []
     text = soup.find_all(string=True)
     for sub_text in text:
         if sub_text.parent.name in tags:
             tokens = tokenize_content(sub_text)
-        final_tokens += (tokens)
-    return set(final_tokens)
+            for token in tokens:
+                if token not in impWords_tags_map \
+                        or (token in impWords_tags_map and impWords_tags_map[token] > tags_map[sub_text.parent.name]):
+                    impWords_tags_map[token] = tags_map[sub_text.parent.name]
+            final_tokens += (tokens)
+    return set(final_tokens), impWords_tags_map
 
 
 def tokenize_content(content):
     ps = PorterStemmer()
-    filtered_content = re.sub(r"[^a-zA-Z0-9\n]", " ", content)
-    tokens = re.findall(r'\w{3,}', filtered_content.lower())
-    stemmed_tokens = [ps.stem(token) for token in tokens]
+    tokens = word_tokenize(content)
+    stemmed_tokens = []
+    for token in tokens:
+        if len(token) < 3:
+            continue
+        stemmed_tokens.append(ps.stem(token.lower()))
     return stemmed_tokens
 
 if __name__ == "__main__":

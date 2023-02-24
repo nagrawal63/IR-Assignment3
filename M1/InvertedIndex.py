@@ -10,7 +10,7 @@ class InvertedIndex:
         self.inverted_index_files = []
 
     # Add a document to inverted index
-    def addDocToInvertedIndex(self, docId, tokens, important_words):
+    def addDocToInvertedIndex(self, docId, tokens, important_words_set, important_words_tags):
         # Calculate tokens to number of occurences hashmap
         tokens_hashmap = {}
         for token in tokens:
@@ -24,8 +24,8 @@ class InvertedIndex:
             if token not in self.inverted_index.keys():
                 self.inverted_index[token] = list()
             
-            if token in important_words:
-                self.inverted_index[token].append(Postings(docId, tokens_hashmap[token], ImportanceEnum.IMPORTANT))
+            if token in important_words_set:
+                self.inverted_index[token].append(Postings(docId, tokens_hashmap[token], important_words_tags[token]))
             else:
                 self.inverted_index[token].append(Postings(docId, tokens_hashmap[token], ImportanceEnum.NORMAL))
 
