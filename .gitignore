@@ -6,3 +6,4 @@ M1/DEV/*
 *.vscode
 *__pycache__
 *test.py
+*.ipynb*

@@ -18,7 +18,7 @@ directory_name = "DEV"
 urls_visited = set()
 URL_to_docID_map = {}
 
-BATCH_SIZE = 2000
+BATCH_SIZE = 4000
 
 def get_file_names():
     file_names = []
@@ -54,7 +54,9 @@ def process_data(file_names):
         if batch_size_processed >= BATCH_SIZE:
             inverted_index.offloadIndex()
             batch_size_processed = 0
+    print("Processed {} documents".format(docID))
     inverted_index.mergeInvertedIndexFiles()
+    inverted_index.addTfIdfScores(inverted_index.inverted_index_files[0], len(URL_to_docID_map))
 
 
 def find_important_words(soup):
@@ -87,17 +89,19 @@ def tokenize_content(content):
         stemmed_tokens.append(ps.stem(token.lower()))
     return stemmed_tokens
 
+def store_url_docID_map():
+    with open("url_docID_map.json", 'w') as f:
+        json.dump(URL_to_docID_map, f)
+
 if __name__ == "__main__":
     start_time = time.time()
     file_names = get_file_names()
     print("number of files: " + str(len(file_names)))
     process_data(file_names)
+    store_url_docID_map()
     end_time = time.time()
     print("Total execution time: " + str(end_time - start_time))
-    # print("[START]Cal pageRank")
-    # page_qual_feature.cal_pagerank()
-    # print(f"[END] Cal pageRank")
-    # page_qual_feature.save_pagefeat(URL_to_docID_map)
-
-    # index = inverted_index.loadInvertedIndex("index/initial_0.json")
-    # print(str(index["such"][0].docId))
+    print("[START]Cal pageRank")
+    page_qual_feature.cal_pagerank()
+    print(f"[END] Cal pageRank")
+    page_qual_feature.save_pagefeat(URL_to_docID_map)

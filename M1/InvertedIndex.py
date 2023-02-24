@@ -3,6 +3,7 @@ import os
 from json import JSONEncoder
 from sortedcontainers import SortedDict
 from enum import IntEnum
+import math
 
 class InvertedIndex:
     def __init__(self) -> None:
@@ -34,7 +35,7 @@ class InvertedIndex:
     It writes the index as json lines where each line is {<token>: [<Postings>]}
     '''
     def offloadIndex(self):
-        invertedIndexFileName = "initial_" + str(len(self.inverted_index_files)) + ".json"
+        invertedIndexFileName = str(len(self.inverted_index_files)) + ".json"
         self.inverted_index_files.append(invertedIndexFileName)
 
         # Write the index as json lines
@@ -87,7 +88,7 @@ class InvertedIndex:
         while(len(self.inverted_index_files) != 1):
             file1 = self.inverted_index_files.pop(0)
             file2 = self.inverted_index_files.pop(0)
-            finalFileName = file1 + "_" + file2
+            finalFileName = file1.rsplit('.', 1)[0] + "_" + file2.rsplit('.', 1)[0] + ".json"
 
             mergeTwoFiles("index/" + file1, "index/" + file2, "index/" + finalFileName)
             os.system("rm -rf index/" + file1)
@@ -99,13 +100,33 @@ class InvertedIndex:
     into a dictionary
     '''
     def loadInvertedIndex(self, filePath):
-        print(filePath)
         data = {}
         with open(filePath, 'r', encoding='utf-8') as f:
             for line in f:
                 line_data = json.loads(line.rstrip('\n|\r'))
                 token = list(line_data.keys())[0]
                 data[token] = [Postings.from_json(value) for value in line_data[token]]
+        return data
+    
+    def addTfIdfScores(self, filePath: str, total_docs):
+        def calculateTfIdfScore(token_freq, token_docs, total_docs):
+            return (math.log(1 + token_freq)) * (math.log(total_docs/token_docs))
+        
+        print("Adding TfIdf scores to inverted index")
+        data = {}
+        with open("index/" + filePath, 'r', encoding='utf-8') as f:
+            with open("index/" + filePath.rsplit('.', 1)[0] + "_tfidf.json", 'w', encoding='utf-8') as out_f:
+                for line in f:
+                    line_data = json.loads(line.rstrip('\n|\r'))
+                    token = list(line_data.keys())[0]
+                    dict_with_tfidf = {token: list()}
+                    for value in line_data[token]:
+                        dict_val = Postings.from_json(value)
+                        dict_val.tfidf = calculateTfIdfScore(dict_val.count, len(line_data[token]), total_docs)
+                        dict_with_tfidf[token].append(dict_val)
+                    json_record = json.dumps(dict_with_tfidf, ensure_ascii=False, cls=CustomEncoder)
+                    out_f.write(json_record + '\n')
+
         return data
         
 '''
@@ -124,12 +145,13 @@ class ImportanceEnum(IntEnum):
     IMPORTANT = 7
 
 class Postings(object):
-    def __init__(self, docId: int, count: int, importance: ImportanceEnum):
+    def __init__(self, docId: int, count: int, importance: ImportanceEnum, tfidf = 0.0):
         self.count = count
         self.docId = docId
         if importance is None:
             self.importance = ImportanceEnum.NORMAL
         self.importance = importance
+        self.tfidf = tfidf
 
     def __str__(self):
         return json.dumps(self, default=lambda o: o.__dict__)
@@ -140,7 +162,10 @@ class Postings(object):
     @staticmethod
     def from_json(str):
         obj = json.loads(str)
-        return Postings(int(obj['count']), int(obj['docId']), ImportanceEnum(int(obj['importance'])))
+        if "tfidf" in obj.keys():
+            return Postings(int(obj['count']), int(obj['docId']), ImportanceEnum(int(obj['importance'])), float(obj['tfidf']))
+        else:
+            return Postings(int(obj['count']), int(obj['docId']), ImportanceEnum(int(obj['importance'])))
 
     def to_json(self):
         return self.__str__()
