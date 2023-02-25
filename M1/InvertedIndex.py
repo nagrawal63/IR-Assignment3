@@ -55,8 +55,9 @@ class InvertedIndex:
 
             f = open(finalFileName, 'w', encoding='utf-8')
             while file1NotEOD  and file2NotEOD:
+                resultDict = {}
                 if tokens1 == tokens2:
-                    resultDict = {tokens1: list()}
+                    resultDict[tokens1] = list()
                     resultDict[tokens1].extend(data1[tokens1])
                     resultDict[tokens1].extend(data2[tokens2])
                     try:
@@ -69,14 +70,14 @@ class InvertedIndex:
                         file2NotEOD = False
 
                 elif tokens1 < tokens2:
-                    resultDict = {tokens1: list()}
+                    resultDict[tokens1] = list()
                     resultDict[tokens1].extend(data1[tokens1])
                     try:
                         data1 = next(filePtr1);tokens1 = list(data1.keys())[0]
                     except StopIteration:
                         file1NotEOD = False
                 else:
-                    resultDict = {tokens2: list()}
+                    resultDict[tokens2] = list()
                     resultDict[tokens2].extend(data2[tokens2])
                     try:
                         data2 = next(filePtr2);tokens2 = list(data2.keys())[0]

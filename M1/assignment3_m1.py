@@ -81,6 +81,7 @@ def find_important_words(soup):
 
 def tokenize_content(content):
     ps = PorterStemmer()
+    content = re.sub(r"[^a-zA-Z0-9\n]", " ", content)
     tokens = word_tokenize(content)
     stemmed_tokens = []
     for token in tokens:
