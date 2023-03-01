@@ -113,6 +113,9 @@ class InvertedIndex:
             os.system("rm -rf index/" + file1)
             os.system("rm -rf index/" + file2)
             self.inverted_index_files.append(finalFileName)
+        
+        # Split the large generated index into files
+        self.splitIndexIntoFiles()
     
     '''
     Loads the inverted index from file(where inverted index is stored as jsonlines)
@@ -148,7 +151,35 @@ class InvertedIndex:
                     out_f.write(json_record + '\n')
 
         return data
-        
+    
+    '''
+    Splits the index files into separate files for each alphabet initiated token
+    
+    Intended to be used when the first file in the inverted_index_files list is the index file we want splitted
+    '''
+    def splitIndexIntoFiles(self, indexFileName=None):
+        if indexFileName == None:
+            indexFileName = self.inverted_index_files[0]
+        indexFilePtr = self.loadInvertedIndex(indexFileName)
+        data = next(indexFilePtr)
+        prevChar = list(data.keys())[0], currChar = prevChar
+        currFile = open(currChar + ".json", 'a')
+        endOfFile = False
+
+        while not endOfFile:
+            try:
+                data = next(indexFilePtr)
+            except StopIteration:
+                endOfFile = True
+            prevChar = currChar
+            currChar = list(data.keys())[0]
+
+            if prevChar != currChar:
+                currFile = open(currChar + ".json", 'a')
+                currFile.close()
+            json_record = json.dumps(data, ensure_ascii=False, cls=CustomEncoder)
+            currFile.write(json_record + '\n')
+
 '''
 Enum to capture importance characteristics of a token
 
