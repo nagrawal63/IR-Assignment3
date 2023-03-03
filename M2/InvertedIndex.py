@@ -216,10 +216,10 @@ class Postings(object):
     def __lt__(self, other):
         return self.docId <= other.docId
     
-    # # Defined this eq function for the set intersection happening during query
-    # # processing
-    # def __eq__(self, other):
-    #     return self.docId == self.other
+    # Defined this eq function for the set intersection happening during query
+    # processing
+    def __eq__(self, other):
+        return self.docId == other.docId
 
 class CustomEncoder(JSONEncoder):
     def default(self, obj):

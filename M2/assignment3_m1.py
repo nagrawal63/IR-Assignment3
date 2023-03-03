@@ -44,7 +44,6 @@ def process_data(file_names):
                 urls_visited.add(extracted_link)
                 URL_to_docID_map[extracted_link] = docID
                 docID_to_URL_map[docID] = extracted_link
-                docID += 1
                 soup = BeautifulSoup(file_dict['content'], features="lxml")
                 important_words_set, important_words_tags = find_important_words(soup)
                 tokens = tokenize_content(soup.get_text())
@@ -52,6 +51,7 @@ def process_data(file_names):
                                                      important_words_tags = important_words_tags)
                 hls = page_qual_feature._extract_hyperlinks(soup)
                 page_qual_feature._build_pagerankdb(extracted_link,hls)
+                docID += 1
                 batch_size_processed+=1
         if batch_size_processed >= BATCH_SIZE:
             inverted_index.offloadIndex()
