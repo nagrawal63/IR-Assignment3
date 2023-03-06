@@ -3,15 +3,15 @@ import time
 from assignment3_m1 import tokenize_content
 import numpy as np
 import json, math
-
+from collections import defaultdict
 TOTAL_DOCS = 55393
 
-def get_tf_idf_scores(commonDocs, query_index):
-    tfidfScores = []
+def get_tf_idf_scores(query_index, docID):
     for index in query_index:
-        if index.docId in commonDocs:
-            tfidfScores.append(index.tfidf)
-    return tfidfScores
+        for web_page in query_index[index]:
+            if web_page.docId == docID:
+                return web_page.tfidf
+    return 0
 
 def loadDocID_to_URL_map():
     docDict = {}
@@ -28,54 +28,61 @@ def process_query(query):
         else:
             query_freq[token] = 1
 
-    query_indexes = []; common_docs = None
-    query_score = []
+    query_indexes = []; common_docs = [];query_docs_len = [];query_docs = [];docs = []
 
-    for token in query_freq.keys():
-        # print(token)
+    for token in sorted(query_freq.keys()):
         token_index = getIndexEntry(token)
-        docs = set(map(lambda x: x.docId, token_index[token]))
-        # print(token_index["a"][0].docId)
         if token_index is not None:
             query_indexes.append(token_index)
-            if common_docs is None:
-                common_docs = set(docs)
-            else:
-                common_docs = common_docs.intersection(docs)
-
-        # tf idf score calculation for the query
-        query_score.append(math.log(1 + query_freq[token]) * math.log(TOTAL_DOCS/len(token_index[token])))
+            docs = list(map(lambda x: x.docId, token_index[token]))
+            common_docs += docs
+            query_docs.append(list(docs))
+            query_docs_len.append(len(docs))
+        else:
+            del query_freq[token]
 
     if len(common_docs) == 0:
-        print("Query not found in data")
-        return
+        print("sorry, nothing matches, please check your query")
+        return None
+    print("after deletion", query_freq)
+    common_docs = list(set(common_docs))
+    query_tfidf_array = calculate_query_tf_idf_score(query_freq,query_docs_len)
 
-    print(common_docs)
-    # print(list(common_docs)[:6])
-    query_score = np.array(query_score)
+    common_docs_tfidf_map = calculate_tf_idf_array_common_docs(query_freq,common_docs,query_indexes,query_docs)
 
-    tfIdfMatrix = []
-    for query_index in query_indexes:
-        token = list(query_index.keys())[0]
-        tfidfscoresQ = get_tf_idf_scores(common_docs, query_index[token])
-        tfIdfMatrix.append(tfidfscoresQ)
-    
-    tfIdfMatrix = np.array(tfIdfMatrix).T
-    common_docs = list(common_docs)
-
-    cosineSimilarityVec = np.dot(tfIdfMatrix, query_score)/(np.linalg.norm(tfIdfMatrix, axis=1) * np.linalg.norm(query_score))
-    rankedDocs = [(common_docs[i], cosineSimilarityVec[i]) for i in range(len(common_docs))]
-
-    # docScores = np.matmul(tfIdfMatrix, query_score.T)
-    # rankedDocs = [(common_docs[i], docScores[i]) for i in range(len(common_docs))]
+    rankedDocs = calculate_cosineSimilarityVec(common_docs_tfidf_map,common_docs,query_tfidf_array)
 
     #Sort in reverse order of similarity
     rankedDocs.sort(key= lambda entry: -entry[1])
 
     docID_to_URL_map = loadDocID_to_URL_map()
     for i in range(len(rankedDocs[:5])):
-        print(docID_to_URL_map[str(rankedDocs[i][0])] + ", simimlarity: " + str(rankedDocs[i][1]))
-    
+        print(docID_to_URL_map[str(rankedDocs[i][0])] + ", similarity: " + str(rankedDocs[i][1]))
+
+def calculate_query_tf_idf_score(query_freq,query_docs_len):
+    query_score = []
+    for token,docs_len in zip(sorted(query_freq.keys()),query_docs_len):
+        # tf idf score calculation for the query
+        tf_idf = (1 + math.log(query_freq[token])) * math.log(TOTAL_DOCS/docs_len)
+        query_score.append(tf_idf)
+    return query_score
+
+def calculate_tf_idf_array_common_docs(query_freq,common_docs,query_indexes,query_docs):
+    URL_tfidf_array_map = defaultdict(list)
+    for doc in common_docs:
+        for word,query_index,docs in zip(sorted(query_freq.keys()),query_indexes,query_docs):
+            if doc in docs:
+                URL_tfidf_array_map[doc].append(get_tf_idf_scores(query_index,doc))
+            else:
+                URL_tfidf_array_map[doc].append(0)
+    return URL_tfidf_array_map
+
+def calculate_cosineSimilarityVec(common_docs_tfidf_map,common_docs,query_tfidf_array):
+    rankedDocs = []
+    for doc in common_docs:
+        cosine_val = np.dot(common_docs_tfidf_map[doc], query_tfidf_array)/(np.linalg.norm(common_docs_tfidf_map[doc]) * np.linalg.norm(query_tfidf_array))
+        rankedDocs.append((doc,cosine_val))
+    return rankedDocs
 
 if __name__ == "__main__":
     while True:
