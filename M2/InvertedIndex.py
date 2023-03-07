@@ -154,6 +154,8 @@ class InvertedIndex:
         currChar = prevChar
         currFile = open("splitted_index/" + currChar + ".json", 'a')
         endOfFile = False
+        lineNum = 1
+        tokenToLineNumDict = {}
 
         while not endOfFile:
             try:
@@ -162,12 +164,17 @@ class InvertedIndex:
                 endOfFile = True
             prevChar = currChar
             currChar = list(data.keys())[0][0]
+            tokenToLineNumDict[list(data.keys())[0]] = lineNum
 
             if prevChar != currChar:
+                currFile.write(json.dumps(tokenToLineNumDict))
                 currFile.close()
+                lineNum = 0
+                tokenToLineNumDict = {}
                 currFile = open("splitted_index/" + currChar + ".json", 'a')
             json_record = json.dumps(data, ensure_ascii=False, cls=CustomEncoder)
             currFile.write(json_record + '\n')
+            lineNum +=1
 
 '''
 Enum to capture importance characteristics of a token
