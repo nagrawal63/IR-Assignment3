@@ -37,3 +37,19 @@ def getIndexEntry(token):
         except StopIteration:
             isFileEmpty = True
     return None
+
+def getIndexDataAllTokens(tokens):
+    stokens = sorted(tokens) # sorted for reducing loading time for same character
+    prevc= None
+    data_dict = {}
+    for t in stokens:
+        currentc = t[0]
+        if currentc != prevc:
+            with open(f'./splitted_index/{currentc}.json') as f:
+                l = f.readlines()
+                skippointer  = json.loads(l[-1]) # read skippointer first 
+            from InvertedIndex import Postings
+            data = [Postings.from_json(d) for d in json.loads(l[skippointer[t]])[t]]  # read only part of file where token is 
+            data_dict[t] = data 
+            prevc = currentc
+    return [data_dict[t] for t in tokens] # for keeping the original order 
