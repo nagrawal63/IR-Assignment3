@@ -17,6 +17,7 @@ page_qual_feature = PageQualFeature()
 directory_name = "DEV"
 urls_visited = set()
 URL_to_docID_map = {}
+docID_to_URL_map = {}
 
 BATCH_SIZE = 4000
 
@@ -42,7 +43,7 @@ def process_data(file_names):
                     continue
                 urls_visited.add(extracted_link)
                 URL_to_docID_map[extracted_link] = docID
-                docID += 1
+                docID_to_URL_map[docID] = extracted_link
                 soup = BeautifulSoup(file_dict['content'], features="lxml")
                 important_words_set, important_words_tags = find_important_words(soup)
                 tokens = tokenize_content(soup.get_text())
@@ -50,6 +51,7 @@ def process_data(file_names):
                                                      important_words_tags = important_words_tags)
                 hls = page_qual_feature._extract_hyperlinks(soup)
                 page_qual_feature._build_pagerankdb(extracted_link,hls)
+                docID += 1
                 batch_size_processed+=1
         if batch_size_processed >= BATCH_SIZE:
             inverted_index.offloadIndex()
@@ -57,6 +59,7 @@ def process_data(file_names):
     print("Processed {} documents".format(docID))
     inverted_index.mergeInvertedIndexFiles()
     inverted_index.addTfIdfScores(inverted_index.inverted_index_files[0], len(URL_to_docID_map))
+    inverted_index.splitIndexIntoFiles()
 
 
 def find_important_words(soup):
@@ -94,12 +97,17 @@ def store_url_docID_map():
     with open("url_docID_map.json", 'w') as f:
         json.dump(URL_to_docID_map, f)
 
+def store_docID_URL_map():
+    with open("docID_url_map.json", 'w') as f:
+        json.dump(docID_to_URL_map, f)
+
 if __name__ == "__main__":
     start_time = time.time()
     file_names = get_file_names()
     print("number of files: " + str(len(file_names)))
     process_data(file_names)
     store_url_docID_map()
+    store_docID_URL_map()
     end_time = time.time()
     print("Total execution time: " + str(end_time - start_time))
     print("[START]Cal pageRank")
