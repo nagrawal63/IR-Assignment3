@@ -38,7 +38,6 @@ def getIndexEntry(token):
             isFileEmpty = True
     return None
 
-
 def getIndexDataAllTokens(tokens):
     stokens = sorted(tokens) # sorted for reducing loading time for same character
     prevc= None
@@ -54,9 +53,3 @@ def getIndexDataAllTokens(tokens):
             data_dict[t] = data 
             prevc = currentc
     return [data_dict[t] for t in tokens] # for keeping the original order 
-
-
-
-
-
-
