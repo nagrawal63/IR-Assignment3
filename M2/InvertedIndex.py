@@ -2,8 +2,10 @@ import json
 import os
 from json import JSONEncoder
 from sortedcontainers import SortedDict
+from InvertedIndexLoader import loadInvertedIndexLineByLine
 from enum import IntEnum
 import math
+from heapq import merge
 
 class InvertedIndex:
     def __init__(self) -> None:
@@ -47,8 +49,8 @@ class InvertedIndex:
 
     def mergeInvertedIndexFiles(self):
         def mergeTwoFiles(file1, file2, finalFileName):
-            filePtr1 = self.loadInvertedIndex(file1)
-            filePtr2 = self.loadInvertedIndex(file2)
+            filePtr1 = loadInvertedIndexLineByLine(file1)
+            filePtr2 = loadInvertedIndexLineByLine(file2)
             data1 = next(filePtr1); data2 = next(filePtr2)
             tokens1 = list(data1.keys())[0]; tokens2 = list(data2.keys())[0]
             file1NotEOD = True ; file2NotEOD= True
@@ -57,9 +59,10 @@ class InvertedIndex:
             while file1NotEOD  and file2NotEOD:
                 resultDict = {}
                 if tokens1 == tokens2:
-                    resultDict[tokens1] = list()
-                    resultDict[tokens1].extend(data1[tokens1])
-                    resultDict[tokens1].extend(data2[tokens2])
+                    # resultDict[tokens1] = list()
+                    # resultDict[tokens1].extend(data1[tokens1])
+                    # resultDict[tokens1].extend(data2[tokens2])
+                    resultDict[tokens1] = list(merge(data1[tokens1], data2[tokens2]))
                     try:
                         data1 = next(filePtr1);tokens1 = list(data1.keys())[0]
                     except StopIteration:
@@ -113,25 +116,10 @@ class InvertedIndex:
             os.system("rm -rf index/" + file1)
             os.system("rm -rf index/" + file2)
             self.inverted_index_files.append(finalFileName)
-        
-        # Split the large generated index into files
-        self.splitIndexIntoFiles()
-    
-    '''
-    Loads the inverted index from file(where inverted index is stored as jsonlines)
-    into a dictionary
-    '''
-    def loadInvertedIndex(self, filePath):
-
-        with open(filePath, 'r', encoding='utf-8') as f:
-            for line in f:
-                data = {}
-                line_data = json.loads(line.rstrip('\n|\r'))
-                token = list(line_data.keys())[0]
-                data[token] = [Postings.from_json(value) for value in line_data[token]]
-                yield data
     
     def addTfIdfScores(self, filePath: str, total_docs):
+        importance_map = {ImportanceEnum.NORMAL: 1, ImportanceEnum.B: 2, ImportanceEnum.H3: 3,
+                           ImportanceEnum.H2: 4, ImportanceEnum.H1: 5, ImportanceEnum.TITLE: 6}
         def calculateTfIdfScore(token_freq, token_docs, total_docs):
             return (math.log(1 + token_freq)) * (math.log(total_docs/token_docs))
         
@@ -145,7 +133,7 @@ class InvertedIndex:
                     dict_with_tfidf = {token: list()}
                     for value in line_data[token]:
                         dict_val = Postings.from_json(value)
-                        dict_val.tfidf = calculateTfIdfScore(dict_val.count, len(line_data[token]), total_docs)
+                        dict_val.tfidf = calculateTfIdfScore(dict_val.count * importance_map[dict_val.importance], len(line_data[token]), total_docs)
                         dict_with_tfidf[token].append(dict_val)
                     json_record = json.dumps(dict_with_tfidf, ensure_ascii=False, cls=CustomEncoder)
                     out_f.write(json_record + '\n')
@@ -159,12 +147,15 @@ class InvertedIndex:
     '''
     def splitIndexIntoFiles(self, indexFileName=None):
         if indexFileName == None:
-            indexFileName = self.inverted_index_files[0]
-        indexFilePtr = self.loadInvertedIndex(indexFileName)
+            indexFileName = "index/" + self.inverted_index_files[0].rsplit('.', 1)[0] + "_tfidf.json"
+        indexFilePtr = loadInvertedIndexLineByLine(indexFileName)
         data = next(indexFilePtr)
-        prevChar = list(data.keys())[0], currChar = prevChar
-        currFile = open(currChar + ".json", 'a')
+        prevChar = list(data.keys())[0][0]
+        currChar = prevChar
+        currFile = open("splitted_index/" + currChar + ".json", 'a')
         endOfFile = False
+        lineNum = 1
+        tokenToLineNumDict = {}
 
         while not endOfFile:
             try:
@@ -172,13 +163,18 @@ class InvertedIndex:
             except StopIteration:
                 endOfFile = True
             prevChar = currChar
-            currChar = list(data.keys())[0]
+            currChar = list(data.keys())[0][0]
+            tokenToLineNumDict[list(data.keys())[0]] = lineNum
 
             if prevChar != currChar:
-                currFile = open(currChar + ".json", 'a')
+                currFile.write(json.dumps(tokenToLineNumDict))
                 currFile.close()
+                lineNum = 0
+                tokenToLineNumDict = {}
+                currFile = open("splitted_index/" + currChar + ".json", 'a')
             json_record = json.dumps(data, ensure_ascii=False, cls=CustomEncoder)
             currFile.write(json_record + '\n')
+            lineNum +=1
 
 '''
 Enum to capture importance characteristics of a token
@@ -214,12 +210,23 @@ class Postings(object):
     def from_json(str):
         obj = json.loads(str)
         if "tfidf" in obj.keys():
-            return Postings(int(obj['count']), int(obj['docId']), ImportanceEnum(int(obj['importance'])), float(obj['tfidf']))
+            return Postings(int(obj['docId']), int(obj['count']), ImportanceEnum(int(obj['importance'])), float(obj['tfidf']))
         else:
-            return Postings(int(obj['count']), int(obj['docId']), ImportanceEnum(int(obj['importance'])))
+            return Postings(int(obj['docId']), int(obj['count']), ImportanceEnum(int(obj['importance'])))
 
     def to_json(self):
         return self.__str__()
+    
+    def __hash__(self):
+        return hash(self.docId)
+    
+    def __lt__(self, other):
+        return self.docId <= other.docId
+    
+    # Defined this eq function for the set intersection happening during query
+    # processing
+    def __eq__(self, other):
+        return self.docId == other.docId
 
 class CustomEncoder(JSONEncoder):
     def default(self, obj):
