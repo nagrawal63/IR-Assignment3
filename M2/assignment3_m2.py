@@ -1,9 +1,12 @@
 from assignment3_m1 import tokenize_content
-from InvertedIndexLoader import loadInvertedIndexFromFile
+from InvertedIndexLoader import loadInvertedIndexFromFile , getIndexDataAllTokens
 import time
 import json
 import numpy as np
 from enum import IntEnum
+from numpy import dot
+from numpy.linalg import norm
+# from sklearn.metrics.pairwise import cosine_similarity
 
 def process_query(query):
     query_tokens = tokenize_content(query)
@@ -23,35 +26,26 @@ def merge_inverted_index(datal,doc2features):
     importance_map = {ImportanceEnum.NORMAL: 1, ImportanceEnum.B: 2, ImportanceEnum.H3: 3,
                            ImportanceEnum.H2: 4, ImportanceEnum.H1: 5, ImportanceEnum.TITLE: 6}
     final_page = {}
+    query =[1] *len(datal)
+    query.extend([0])
+    print(query)
     for i,td in enumerate(datal):
         for d in td:
             if d.docId in final_page:
-                final_page[d.docId][i] = d.tfidf 
+                final_page[d.docId][i] = d.tfidf # / len(td) 
             else:
-                final_page[d.docId] = [0] * (len(datal) )#+1 )  #[TODO]+1 page features # initialize with zero vector
-                final_page[d.docId][i] = d.tfidf
+                final_page[d.docId] = [0] * (len(datal) + 1 )  #[TODO]+1 page features # initialize with zero vector
+                final_page[d.docId][i] = d.tfidf #/ len(td)
 
     # pagerank =  [doc2features[str(d)]['pagerank'] for d in final_page]
     # minp = min(pagerank)
     # maxp = max(pagerank)
-    # for d in final_page:
-    #     final_page[d][-1] = (doc2features[str(d)]['pagerank']  - minp) / (maxp - minp) 
-    return sorted({k:sum(v) for k,v in final_page.items() if 0 not in v}.items(),key=lambda x :x[1],reverse=True) # [TODO] & option adding ? 
+    for d in final_page:
+        final_page[d][-1] = doc2features[str(d)]['pagerank']
+    return sorted({k:dot(query,v) for k,v in final_page.items() if 0 not in v}.items(),key=lambda x :x[1],reverse=True) # [TODO] & option adding ? 
 
 def retrieve_pages(tokens,doc2features):
-    tokens = sorted(tokens) # sorted for reducing loading time for same character
-    prevc= None
-    datal = []
-    for t in tokens:
-        currentc = t[0]
-        if currentc != prevc:
-            with open(f'./splitted_index/{currentc}.json') as f:
-                l = f.readlines()
-                skippointer  = json.loads(l[-1])
-            from InvertedIndex import Postings
-            data = [Postings.from_json(d) for d in json.loads(l[skippointer[t]])[t]]       
-            datal.append(data)
-            prevc = currentc
+    datal = getIndexDataAllTokens(tokens)
     pages = merge_inverted_index(datal,doc2features)
     return pages[:10]
 
