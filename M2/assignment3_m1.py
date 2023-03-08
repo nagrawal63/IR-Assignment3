@@ -75,9 +75,10 @@ def find_important_words(soup):
         if sub_text.parent.name in tags:
             tokens = tokenize_content(sub_text)
             for token in tokens:
-                if token not in impWords_tags_map \
-                        or (token in impWords_tags_map and impWords_tags_map[token] > tags_map[sub_text.parent.name]):
-                    impWords_tags_map[token] = tags_map[sub_text.parent.name]
+                if token not in impWords_tags_map:
+                    impWords_tags_map[token] =  dict.fromkeys(ImportanceEnum,0)
+                else:
+                    impWords_tags_map[token][tags_map[sub_text.parent.name]] += 1
             final_tokens += (tokens)
     return set(final_tokens), impWords_tags_map
 
