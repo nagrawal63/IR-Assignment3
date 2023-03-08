@@ -3,3 +3,4 @@ nltk
 sortedcontainers
 lxml
 numpy
+simhash

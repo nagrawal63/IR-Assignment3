@@ -26,14 +26,14 @@ def loadInvertedIndexLineByLine(filePath):
 
 def getIndexEntry(token):
     fileName = "splitted_index/" + token[0] + ".json"
-    filePtr = loadInvertedIndexLineByLine(fileName); line = next(filePtr)
-    isFileEmpty = False
-
-    while not isFileEmpty:
-        try:
-            if token == list(line.keys())[0]:
-                return line
-            line = next(filePtr)
-        except StopIteration:
-            isFileEmpty = True
-    return None
+    data = {}
+    with open(fileName, "r") as file:
+        filelines = file.readlines()
+        tokenMap = json.loads(filelines[-1])
+        indexLine = filelines[tokenMap[token]-1]
+        line_data = json.loads(indexLine.rstrip('\n|\r'))
+        token = list(line_data.keys())[0]
+        from InvertedIndex import Postings
+        data[token] = [Postings.from_json(value) for value in line_data[token]]
+    # print(data)
+    return data

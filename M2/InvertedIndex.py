@@ -2,18 +2,33 @@ import json
 import os
 from json import JSONEncoder
 from sortedcontainers import SortedDict
-from InvertedIndexLoader import loadInvertedIndexLineByLine
+from InvertedIndexLoader import loadInvertedIndexLineByLine, loadInvertedIndexFromFile
 from enum import IntEnum
 import math
+import random
+import string
 from heapq import merge
+from simhash import Simhash, SimhashIndex
 
 class InvertedIndex:
     def __init__(self) -> None:
         self.inverted_index = SortedDict()
         self.inverted_index_files = []
+        self.simhashIndexes = SimhashIndex(list(), k=3)
 
     # Add a document to inverted index
     def addDocToInvertedIndex(self, docId, tokens, important_words_set, important_words_tags):
+        def check_close_duplicates(tokens):
+            def get_random_string():
+                return ''.join(random.choices(string.ascii_uppercase +
+                                        string.digits, k=64))
+            s1 = Simhash(tokens)
+            if len(self.simhash_indexes.get_near_dups(s1)) == 0:
+                self.simhash_indexes.add(get_random_string(), s1)
+                return False
+            return True
+        if check_close_duplicates(tokens):
+            return
         # Calculate tokens to number of occurences hashmap
         tokens_hashmap = {}
         for token in tokens:
@@ -59,9 +74,6 @@ class InvertedIndex:
             while file1NotEOD  and file2NotEOD:
                 resultDict = {}
                 if tokens1 == tokens2:
-                    # resultDict[tokens1] = list()
-                    # resultDict[tokens1].extend(data1[tokens1])
-                    # resultDict[tokens1].extend(data2[tokens2])
                     resultDict[tokens1] = list(merge(data1[tokens1], data2[tokens2]))
                     try:
                         data1 = next(filePtr1);tokens1 = list(data1.keys())[0]
@@ -121,7 +133,7 @@ class InvertedIndex:
         importance_map = {ImportanceEnum.NORMAL: 1, ImportanceEnum.B: 2, ImportanceEnum.H3: 3,
                            ImportanceEnum.H2: 4, ImportanceEnum.H1: 5, ImportanceEnum.TITLE: 6}
         def calculateTfIdfScore(token_freq, token_docs, total_docs):
-            return (math.log(1 + token_freq)) * (math.log(total_docs/token_docs))
+            return (1 + math.log(token_freq)) * (math.log(total_docs/token_docs))
         
         print("Adding TfIdf scores to inverted index")
         data = {}
@@ -146,16 +158,17 @@ class InvertedIndex:
     Intended to be used when the first file in the inverted_index_files list is the index file we want splitted
     '''
     def splitIndexIntoFiles(self, indexFileName=None):
+        splitIndexFileNames = []
         if indexFileName == None:
             indexFileName = "index/" + self.inverted_index_files[0].rsplit('.', 1)[0] + "_tfidf.json"
         indexFilePtr = loadInvertedIndexLineByLine(indexFileName)
         data = next(indexFilePtr)
         prevChar = list(data.keys())[0][0]
         currChar = prevChar
-        currFile = open("splitted_index/" + currChar + ".json", 'a')
+        fileName = "splitted_index/" + currChar + ".json"
+        splitIndexFileNames.append(fileName)
+        currFile = open(fileName, 'a')
         endOfFile = False
-        lineNum = 1
-        tokenToLineNumDict = {}
 
         while not endOfFile:
             try:
@@ -164,18 +177,24 @@ class InvertedIndex:
                 endOfFile = True
             prevChar = currChar
             currChar = list(data.keys())[0][0]
-            tokenToLineNumDict[list(data.keys())[0]] = lineNum
 
             if prevChar != currChar:
-                currFile.write(json.dumps(tokenToLineNumDict))
                 currFile.close()
-                lineNum = 0
-                tokenToLineNumDict = {}
-                currFile = open("splitted_index/" + currChar + ".json", 'a')
-            json_record = json.dumps(data, ensure_ascii=False, cls=CustomEncoder)
-            currFile.write(json_record + '\n')
-            lineNum +=1
+                fileName = "splitted_index/" + currChar + ".json"
+                currFile = open(fileName, 'a')
+                splitIndexFileNames.append(fileName)
+            if data != None:
+                json_record = json.dumps(data, ensure_ascii=False, cls=CustomEncoder)
+                currFile.write(json_record + '\n')
+        currFile.close()
+        self.addTokensLineNumSkipList(splitIndexFileNames)
 
+    def addTokensLineNumSkipList(self, splittedIndexFiles):
+        for splitIndexFileName in splittedIndexFiles:
+            data = loadInvertedIndexFromFile(splitIndexFileName)
+            tokenMap = {token: (i+1) for i, token in enumerate(data.keys())}
+            with open(splitIndexFileName, 'a') as f:
+                f.write(json.dumps(tokenMap))
 '''
 Enum to capture importance characteristics of a token
 
