@@ -1,3 +1,5 @@
+lib/*
+*.cfg
 M1/DEV/*
 *.zip
 *.DS_Store
@@ -7,3 +9,4 @@ M1/DEV/*
 *__pycache__
 *test.py
 *.ipynb*
+bin/*
