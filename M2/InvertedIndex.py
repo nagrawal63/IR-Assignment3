@@ -14,19 +14,21 @@ class InvertedIndex:
     def __init__(self) -> None:
         self.inverted_index = SortedDict()
         self.inverted_index_files = []
-        self.simhashIndexes = SimhashIndex(list(), k=3)
+        self.simhashIndexes = SimhashIndex(list(), k=1)
 
     # Add a document to inverted index
     def addDocToInvertedIndex(self, docId, tokens, important_words_set, important_words_tags):
+
+        # One possible issue with approach is that we might have docIds in the hashmap in assignment3_m1.py
+        # which are not in the final index since they were duplicates
         def check_close_duplicates(tokens):
-            def get_random_string():
-                return ''.join(random.choices(string.ascii_uppercase +
-                                        string.digits, k=64))
             s1 = Simhash(tokens)
-            if len(self.simhash_indexes.get_near_dups(s1)) == 0:
-                self.simhash_indexes.add(get_random_string(), s1)
+            near_duplicates = self.simhashIndexes.get_near_dups(s1)
+            if len(near_duplicates) == 0:
+                self.simhashIndexes.add(str(docId), s1)
                 return False
             return True
+
         if check_close_duplicates(tokens):
             return
         # Calculate tokens to number of occurences hashmap

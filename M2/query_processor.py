@@ -5,13 +5,18 @@ import numpy as np
 import json, math
 
 TOTAL_DOCS = 55393
-rankingTechnique = ["docScore", "pageRank"]
+rankingTechnique = ["tfIdfCosineSimilarity", "pageRank"]
 
-def get_tf_idf_scores(commonDocs, query_index):
-    tfidfScores = []
-    for index in query_index:
-        if index.docId in commonDocs:
-            tfidfScores.append(index.tfidf)
+def get_tf_idf_scores(commonDocs, query_indexes):
+    tfidfScores = {}
+    commonDocs = set(commonDocs)
+    for i, token in enumerate(query_indexes):
+        for index in query_indexes[token]:
+            if index.docId in commonDocs:
+                if index.docId not in tfidfScores.keys():
+                    tfidfScores[index.docId] = [index.tfidf]
+                else:
+                    tfidfScores[index.docId].append(index.tfidf)
     return tfidfScores
 
 def loadDocID_to_URL_map():
@@ -34,23 +39,21 @@ def rankingResults(rankingTechniques, pageRankDict, queryIndexes, commonDocs, qu
     while i < len(rankingTechniques):
         rankingTechnique = rankingTechniques[i]
         if rankingTechnique == "tfIdfSum":
-            tfIdfMatrix = [get_tf_idf_scores(commonDocs, v) for k, v in queryIndexes.items()]
-            tfIdfScore = np.sum(tfIdfMatrix, axis=0)
-            rankedDocs = [(rankedDocs[i] + (tfIdfScore[i], )) for i in range(len(rankedDocs))]
+            tfIdfMatrix = get_tf_idf_scores(commonDocs, queryIndexes)
+            tfIdfScore = {k: sum(v) for k, v in tfIdfMatrix.items()}
+            rankedDocs = [(rankedDocs[i] + (tfIdfScore[rankedDocs[i][0]], )) for i in range(len(rankedDocs))]
         elif rankingTechnique == "tfIdfCosineSimilarity":
-            tfIdfMatrix = [get_tf_idf_scores(commonDocs, v) for k, v in queryIndexes.items()]
-            tfIdfMatrix = np.array(tfIdfMatrix).T
-            cosineSimilarityVec = np.dot(tfIdfMatrix, queryScore)/(np.linalg.norm(tfIdfMatrix, axis=1) * np.linalg.norm(queryScore))
-            rankedDocs = [(rankedDocs[i] + (cosineSimilarityVec[i], )) for i in range(len(rankedDocs))]
+            tfIdfMatrix = get_tf_idf_scores(commonDocs, queryIndexes)
+            cosineSimilarityVec = {k: np.dot(v, queryScore)/(np.linalg.norm(v) * np.linalg.norm(queryScore)) for k, v in tfIdfMatrix.items()}
+            rankedDocs = [(rankedDocs[i] + (cosineSimilarityVec[rankedDocs[i][0]], )) for i in range(len(rankedDocs))]
         elif rankingTechnique == "pageRank":
             pageRankDict = load_page_rank()
             commonDocsPageRank = {docId: pageRankDict[str(docId)]["pagerank"] for docId in commonDocs}
             rankedDocs = [(rankedDocs[i] + (commonDocsPageRank[rankedDocs[i][0]], )) for i in range(len(rankedDocs))]
         elif rankingTechnique == "docScore":
-            tfIdfMatrix = [get_tf_idf_scores(commonDocs, v) for k, v in queryIndexes.items()]
-            tfIdfMatrix = np.array(tfIdfMatrix).T
-            docScores = np.matmul(tfIdfMatrix, queryScore.T)
-            rankedDocs = [(rankedDocs[i] + (docScores[i], )) for i in range(len(rankedDocs))]
+            tfIdfMatrix = get_tf_idf_scores(commonDocs, queryIndexes)
+            docScores = {k: np.dot(v, queryScore) for k, v in tfIdfMatrix.items()}
+            rankedDocs = [(rankedDocs[i] + (docScores[rankedDocs[i][0]], )) for i in range(len(rankedDocs))]
         i += 1
     rankedDocs.sort(key=lambda x: (x[1:]), reverse=True)
     return rankedDocs
@@ -92,7 +95,7 @@ def process_query(query):
     query_output = []
     docID_to_URL_map = loadDocID_to_URL_map()
     for i in range(len(rankedDocs[:5])):
-        query_output.append(docID_to_URL_map[str(rankedDocs[i][0])] + ", simimlarity: " + str(rankedDocs[i][1]))
+        query_output.append(docID_to_URL_map[str(rankedDocs[i][0])])
     return query_output
     
 
