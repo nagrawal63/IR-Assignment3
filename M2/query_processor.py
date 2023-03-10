@@ -58,7 +58,7 @@ def rankingResults(rankingTechniques, pageRankDict, queryIndexes, commonDocs, qu
     rankedDocs.sort(key=lambda x: (x[1:]), reverse=True)
     return rankedDocs
 
-def process_query(query):
+def process_query(query, pageRanksDict):
     tokenized_query = tokenize_content(query)
     query_freq = {}
     for token in tokenized_query:
@@ -87,10 +87,8 @@ def process_query(query):
     if len(common_docs) == 0:
         print("Query not found in data")
         return
-
-    query_score = np.array(query_score)
-    pageRanksDict = load_page_rank()
-    rankedDocs = rankingResults(rankingTechnique, pageRanksDict, query_indexes, common_docs, query_score)
+    
+    rankedDocs = rankingResults(rankingTechnique, pageRanksDict, query_indexes, common_docs, np.array(query_score))
 
     query_output = []
     docID_to_URL_map = loadDocID_to_URL_map()
@@ -102,8 +100,9 @@ def process_query(query):
 if __name__ == "__main__":
     while True:
         query = input()
+        pageRanksDict = load_page_rank()
         start_time = time.time()
-        query_output = process_query(query)
+        query_output = process_query(query, pageRanksDict)
         end_time = time.time()
         for output in query_output:
             print(output)

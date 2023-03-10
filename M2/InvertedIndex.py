@@ -5,8 +5,6 @@ from sortedcontainers import SortedDict
 from InvertedIndexLoader import loadInvertedIndexLineByLine, loadInvertedIndexFromFile
 from enum import IntEnum
 import math
-import random
-import string
 from heapq import merge
 from simhash import Simhash, SimhashIndex
 
