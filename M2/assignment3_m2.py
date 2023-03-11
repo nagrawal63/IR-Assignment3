@@ -26,23 +26,21 @@ def merge_inverted_index(datal,doc2features):
     importance_map = {ImportanceEnum.NORMAL: 1, ImportanceEnum.B: 2, ImportanceEnum.H3: 3,
                            ImportanceEnum.H2: 4, ImportanceEnum.H1: 5, ImportanceEnum.TITLE: 6}
     final_page = {}
-    query =[1] *len(datal)
-    query.extend([0])
-    print(query)
+    queryv =[1] *len(datal)
+    
     for i,td in enumerate(datal):
+        #queryv[i] = 1/ len(td)
         for d in td:
             if d.docId in final_page:
-                final_page[d.docId][i] = d.tfidf # / len(td) 
+                final_page[d.docId][i] = d.tfidf
             else:
-                final_page[d.docId] = [0] * (len(datal) + 1 )  #[TODO]+1 page features # initialize with zero vector
-                final_page[d.docId][i] = d.tfidf #/ len(td)
-
-    # pagerank =  [doc2features[str(d)]['pagerank'] for d in final_page]
-    # minp = min(pagerank)
-    # maxp = max(pagerank)
+                final_page[d.docId] = [0] * (len(datal) +1 )  #[len(td)TODO]+1 page features # initialize with zero vector
+                final_page[d.docId][i] = d.tfidf
+    queryv.extend([0.01])
     for d in final_page:
-        final_page[d][-1] = doc2features[str(d)]['pagerank']
-    return sorted({k:dot(query,v) for k,v in final_page.items() if 0 not in v}.items(),key=lambda x :x[1],reverse=True) # [TODO] & option adding ? 
+        final_page[d][-1] = doc2features[str(d)]['pagein']/len(doc2features)
+
+    return sorted({k:dot(queryv,v) for k,v in final_page.items() if 0 not in v}.items(),key=lambda x :x[1],reverse=True) # [TODO] & option adding ? 
 
 def retrieve_pages(tokens,doc2features):
     datal = getIndexDataAllTokens(tokens)
@@ -56,7 +54,7 @@ if __name__ == "__main__":
             doc2id = json.load(f)
         with open("./docID_url_map.json") as f:
             id2doc = json.load(f)
-        with open('./page_quality_features.json') as f:
+        with open('../M1/page_quality_features.json') as f:
             doc2features = json.load(f)
         print("Enter Query:")
         query = input()
@@ -64,6 +62,6 @@ if __name__ == "__main__":
         tokens = process_query(query)
         pages = retrieve_pages(tokens,doc2features)
         for p in pages:
-            print(id2doc[str(p[0])]) 
+            print(p,p[1],doc2features[str(p[0])],id2doc[str(p[0])]) 
         end_time = time.time()
         print("Processing query({}) took {} seconds".format(query,end_time-start_time))
