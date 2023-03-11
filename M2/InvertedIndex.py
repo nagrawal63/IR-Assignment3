@@ -43,9 +43,10 @@ class InvertedIndex:
                 self.inverted_index[token] = list()
             
             if token in important_words_set:
-                self.inverted_index[token].append(Postings(docId, tokens_hashmap[token], important_words_tags[token]))
+                self.inverted_index[token].append(Postings(docId, tokens_hashmap[token], ImportanceEnum.IMPORTANT, important_words_tags[token]))
             else:
-                self.inverted_index[token].append(Postings(docId, tokens_hashmap[token], ImportanceEnum.NORMAL))
+                token_map = dict.fromkeys(ImportanceEnum,0)
+                self.inverted_index[token].append(Postings(docId, tokens_hashmap[token], ImportanceEnum.NORMAL,token_map))
 
     '''
     Write the inverted index into memory
@@ -133,10 +134,9 @@ class InvertedIndex:
             self.inverted_index_files.append(finalFileName)
     
     def addTfIdfScores(self, filePath: str, total_docs):
-        importance_map = {ImportanceEnum.NORMAL: 1, ImportanceEnum.B: 2, ImportanceEnum.H3: 3,
-                           ImportanceEnum.H2: 4, ImportanceEnum.H1: 5, ImportanceEnum.TITLE: 6}
+
         def calculateTfIdfScore(token_freq, token_docs, total_docs):
-            return (math.log(1 + token_freq)) * (math.log(total_docs/token_docs))
+            return (1 + math.log(token_freq)) * (math.log(total_docs/token_docs))
         
         print("Adding TfIdf scores to inverted index")
         data = {}
@@ -148,7 +148,15 @@ class InvertedIndex:
                     dict_with_tfidf = {token: list()}
                     for value in line_data[token]:
                         dict_val = Postings.from_json(value)
-                        dict_val.tfidf = calculateTfIdfScore(dict_val.count * importance_map[dict_val.importance], len(line_data[token]), total_docs)
+                        dict_val.tfidf = calculateTfIdfScore(dict_val.count, len(line_data[token]), total_docs)
+                        if dict_val.importance == ImportanceEnum.NORMAL:
+                            dict_val.tfidf_improved = dict_val.tfidf
+                        else:
+                            final_count = dict_val.count
+                            for key in dict_val.importance_tags_map.keys():
+                                freq = dict_val.importance_tags_map[key]
+                                final_count += int(key) * freq
+                            dict_val.tfidf_improved = calculateTfIdfScore(final_count, len(line_data[token]), total_docs)
                         dict_with_tfidf[token].append(dict_val)
                     json_record = json.dumps(dict_with_tfidf, ensure_ascii=False, cls=CustomEncoder)
                     out_f.write(json_record + '\n')
@@ -198,22 +206,24 @@ Currently only using NORMAL and IMPORTANT since find_important_words function
 only gives important or not important
 '''
 class ImportanceEnum(IntEnum):
-    TITLE = 1
-    H1 = 2
-    H2 = 3
-    H3 = 4
-    B = 5
-    NORMAL = 6
+    TITLE = 6
+    H1 = 5
+    H2 = 4
+    H3 = 3
+    B = 2
+    NORMAL = 1
     IMPORTANT = 7
 
 class Postings(object):
-    def __init__(self, docId: int, count: int, importance: ImportanceEnum, tfidf = 0.0):
+    def __init__(self, docId: int, count: int, importance: ImportanceEnum,importance_tags_map, tfidf = 0.0, tfidf_improved = 0.0):
         self.count = count
         self.docId = docId
         if importance is None:
             self.importance = ImportanceEnum.NORMAL
         self.importance = importance
         self.tfidf = tfidf
+        self.tfidf_improved = tfidf_improved
+        self.importance_tags_map = importance_tags_map
 
     def __str__(self):
         return json.dumps(self, default=lambda o: o.__dict__)
@@ -225,9 +235,10 @@ class Postings(object):
     def from_json(str):
         obj = json.loads(str)
         if "tfidf" in obj.keys():
-            return Postings(int(obj['docId']), int(obj['count']), ImportanceEnum(int(obj['importance'])), float(obj['tfidf']))
+            return Postings(int(obj['docId']), int(obj['count']), ImportanceEnum(int(obj['importance'])),
+                            dict(obj['importance_tags_map']), float(obj['tfidf']),float(obj['tfidf_improved']) )
         else:
-            return Postings(int(obj['docId']), int(obj['count']), ImportanceEnum(int(obj['importance'])))
+            return Postings(int(obj['docId']), int(obj['count']), ImportanceEnum(int(obj['importance'])), dict(obj['importance_tags_map']))
 
     def to_json(self):
         return self.__str__()
