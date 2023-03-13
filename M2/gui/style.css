@@ -233,7 +233,7 @@ div.middle {
     @media only screen and (min-width: 2560px) {
 
        .list {
-          max-height: 240px;
+          max-height: 1000px;
         }
     }
     

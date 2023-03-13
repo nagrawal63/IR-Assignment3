@@ -13,20 +13,20 @@ const closeimg = document.getElementById("close-img-js");
 closeimg.addEventListener('click', closeimgfunction);
 closeimg.addEventListener('keyup', enterkeyClose);
 
-// Hide All function when you click anywhere on the background
-function hideallfunction(){
-    document.querySelectorAll('.globalsearchremove').forEach(el => el.classList.remove('show'))
-    document.querySelectorAll('.globalsearchremove').forEach(el => el.classList.add('hide'))
-    document.querySelector('.searchbar').value = "";
-    document.querySelector('.searchbar').setAttribute("placeholder", "Search...");
-    document.getElementById('close-img-js').setAttribute("tabindex", "-1");
-    window.setTimeout(hideallfunction2, 500);
-}
+// // Hide All function when you click anywhere on the background
+// function hideallfunction(){
+//     document.querySelectorAll('.globalsearchremove').forEach(el => el.classList.remove('show'))
+//     document.querySelectorAll('.globalsearchremove').forEach(el => el.classList.add('hide'))
+//     document.querySelector('.searchbar').value = "";
+//     document.querySelector('.searchbar').setAttribute("placeholder", "Search...");
+//     document.getElementById('close-img-js').setAttribute("tabindex", "-1");
+//     window.setTimeout(hideallfunction2, 500);
+// }
 
-function hideallfunction2(){
-    document.querySelectorAll('.globalsearchremove').forEach(el => el.classList.remove('add'))
-    document.querySelectorAll('.globalsearchremove').forEach(el => el.classList.add('remove'))
-}
+// function hideallfunction2(){
+//     document.querySelectorAll('.globalsearchremove').forEach(el => el.classList.remove('add'))
+//     document.querySelectorAll('.globalsearchremove').forEach(el => el.classList.add('remove'))
+// }
   
 //showing the list under circumstances (if it's not empty, you show the list with the result when you click on the search icon.
 // if it isn't empty it focuses on the search bar so you'd type something.)
@@ -82,11 +82,11 @@ function search(event) {
         
         pass_values(input).done(function(response){
             for (i = 0; i < 10; i++) {
-                x[i].textContent = response[i.toString()];
-                // x[i].html= response[i.toString()];
+                x[i].text = response[i.toString()];
+                x[i].innerHTML = response[i.toString()];
             }
         });
-        // for (i = 0; i < x.length; i++) {
+        // for (i = 0; i < x.length; i++) {   
         //     x[i].innerHTML = pages[i.toString()]        
         //     // if (!x[i].innerHTML.toLowerCase().includes(input)) {
         //     //     x[i].style.display="none";
@@ -96,6 +96,11 @@ function search(event) {
         //     //     list += 1;
         //     // }
         // }
+
+    
+    $( ".section" ).each(function() {
+        $( this ).css( "color", "blue" ).html('<a href="#'+$(this).text()+'">'+$(this).text()+'</a>');
+    });
 
     if (list === 1) {
         noresult.style.display="list-item";
