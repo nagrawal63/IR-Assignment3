@@ -7,6 +7,17 @@ from enum import IntEnum
 from numpy import dot
 from numpy.linalg import norm
 # from sklearn.metrics.pairwise import cosine_similarity
+from flask import Flask
+from flask_cors import CORS
+
+app = Flask(__name__)
+CORS(app)
+with open("./url_docID_map.json") as f:
+    doc2id = json.load(f)
+with open("./docID_url_map.json") as f:
+    id2doc = json.load(f)
+with open('../M1/page_quality_features.json') as f:
+    doc2features = json.load(f)
 
 def process_query(query):
     query_tokens = tokenize_content(query)
@@ -47,7 +58,14 @@ def retrieve_pages(tokens,doc2features):
     pages = merge_inverted_index(datal,doc2features)
     return pages[:10]
 
-
+@app.route('/main',methods=['GET'])
+def main():
+    from flask import request
+    query = request.args.get('query')
+    tokens = process_query(query)
+    pages = retrieve_pages(tokens,doc2features)   
+    return json.dumps({i:id2doc[str(p[0])] for i,p in enumerate(pages)})
+    
 if __name__ == "__main__":
     while True:
         with open("./url_docID_map.json") as f:
@@ -62,6 +80,6 @@ if __name__ == "__main__":
         tokens = process_query(query)
         pages = retrieve_pages(tokens,doc2features)
         for p in pages:
-            print(p,p[1],doc2features[str(p[0])],id2doc[str(p[0])]) 
+            print(p,id2doc[str(p[0])]) 
         end_time = time.time()
         print("Processing query({}) took {} seconds".format(query,end_time-start_time))

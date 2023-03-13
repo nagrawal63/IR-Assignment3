@@ -44,7 +44,7 @@ div.middle {
     border: 1px solid lightgray;
     border-radius: 20px;
     display: flex;
-    width: 300px;
+    width: 500px;
     flex-direction: column;
 }
 
@@ -185,7 +185,7 @@ div.middle {
        }
 
        .searchsection {
-           width: 400px;
+           width: 700px;
        }
 
        .searchimg {

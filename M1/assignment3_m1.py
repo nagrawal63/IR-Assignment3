@@ -14,7 +14,7 @@ from collections import defaultdict
 
 inverted_index = InvertedIndex()
 page_qual_feature = PageQualFeature()
-directory_name = "./M1/DEV"
+directory_name = "../M1/DEV"
 urls_visited = set()
 URL_to_docID_map = {}
 docID_to_URL_map = {}
@@ -57,9 +57,9 @@ def process_data(file_names):
             inverted_index.offloadIndex()
             batch_size_processed = 0
     print("Processed {} documents".format(docID))
-    #inverted_index.mergeInvertedIndexFiles()
-    #inverted_index.addTfIdfScores(inverted_index.inverted_index_files[0], len(URL_to_docID_map))
-    #inverted_index.splitIndexIntoFiles()
+    inverted_index.mergeInvertedIndexFiles()
+    inverted_index.addTfIdfScores(inverted_index.inverted_index_files[0], len(URL_to_docID_map))
+    inverted_index.splitIndexIntoFiles()
 
 
 def find_important_words(soup):

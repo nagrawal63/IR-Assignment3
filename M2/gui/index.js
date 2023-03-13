@@ -27,7 +27,7 @@ function hideallfunction2(){
     document.querySelectorAll('.globalsearchremove').forEach(el => el.classList.remove('add'))
     document.querySelectorAll('.globalsearchremove').forEach(el => el.classList.add('remove'))
 }
-
+  
 //showing the list under circumstances (if it's not empty, you show the list with the result when you click on the search icon.
 // if it isn't empty it focuses on the search bar so you'd type something.)
 function searchshow(){
@@ -52,6 +52,25 @@ function searchshow2(){
     document.querySelector('.borderbetween').classList.add('show');
 }
 
+function pass_values(query) {
+        return $.ajax(
+        {
+            type:'GET',
+            dataType:'json'    ,
+            contentType:'application/json',
+            secure: false,
+            headers: {
+                'Access-Control-Allow-Origin': '*',
+            },
+            url:'http://localhost:5000/main?query='+query,
+            success: function(data) {
+                return data;
+            },
+            error: function() {
+                alert('Error occured');
+            }
+        });
+ }
 //global search function
 function search(event) {
     if (event.keyCode === 13) {
@@ -60,25 +79,23 @@ function search(event) {
         let x = document.getElementsByClassName('section');
         let noresult = document.querySelector('.noresult');
         let list= document.querySelector('.list').childElementCount;
-        URL = "https://localhost:9000/search?query=" + input ;
-        fetch(URL).then(response => {
-            return response.json();
-        }).then(data => {
-            // Work with JSON data here
-            console.log(data);
-        }).catch(err => {
-            console.log(URL);
-        });
-
-        for (i = 0; i < x.length; i++) {
-            if (!x[i].innerHTML.toLowerCase().includes(input)) {
-                x[i].style.display="none";
-                list -= 1;
-            } else {
-                x[i].style.display="list-item";
-                list += 1;
+        
+        pass_values(input).done(function(response){
+            for (i = 0; i < 10; i++) {
+                x[i].textContent = response[i.toString()];
+                // x[i].html= response[i.toString()];
             }
-        }
+        });
+        // for (i = 0; i < x.length; i++) {
+        //     x[i].innerHTML = pages[i.toString()]        
+        //     // if (!x[i].innerHTML.toLowerCase().includes(input)) {
+        //     //     x[i].style.display="none";
+        //     //     list -= 1;
+        //     // } else {
+        //     //     x[i].style.display="list-item";
+        //     //     list += 1;
+        //     // }
+        // }
 
     if (list === 1) {
         noresult.style.display="list-item";

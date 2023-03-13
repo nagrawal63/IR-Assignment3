@@ -94,7 +94,7 @@ class PageQualFeature:
             for p in PR:
                 newrank = PR[p]
                 if p in self.pagein:
-                    newrank = 1/len(self.pageout) + 0.9*sum([PR[ip]/len(self.pageout[ip]) for ip in self.pagein[p] ])
+                    newrank = 0.1 * (1/len(self.pageout)) + 0.9*sum([PR[ip]/len(self.pageout[ip]) for ip in self.pagein[p] ])
                 new_PR[p] = newrank
             err = sum([abs(new_PR[n] - PR[n]) for n in PR])
             if err < len(PR)*tol:
