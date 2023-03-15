@@ -16,7 +16,7 @@ with open("./url_docID_map.json") as f:
     doc2id = json.load(f)
 with open("./docID_url_map.json") as f:
     id2doc = json.load(f)
-with open('../M1/page_quality_features.json') as f:
+with open('./page_quality_features.json') as f:
     doc2features = json.load(f)
 
 def process_query(query):
@@ -72,7 +72,7 @@ if __name__ == "__main__":
             doc2id = json.load(f)
         with open("./docID_url_map.json") as f:
             id2doc = json.load(f)
-        with open('../M1/page_quality_features.json') as f:
+        with open('./page_quality_features.json') as f:
             doc2features = json.load(f)
         print("Enter Query:")
         query = input()

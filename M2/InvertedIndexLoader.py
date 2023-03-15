@@ -1,5 +1,7 @@
 import json
 
+split_index_dir = "splitted_index/"
+
 def loadInvertedIndexFromFile(filePath):
     data = {}
     with open(filePath, 'r', encoding='utf-8') as f:
@@ -25,7 +27,7 @@ def loadInvertedIndexLineByLine(filePath):
             yield data
 
 def getIndexEntry(token):
-    fileName = "splitted_index/" + token[0] + ".json"
+    fileName = split_index_dir + token[0] + ".json"
     filePtr = loadInvertedIndexLineByLine(fileName); line = next(filePtr)
     isFileEmpty = False
 
@@ -46,7 +48,7 @@ def getIndexDataAllTokens(tokens):
     for t in stokens:
         currentc = t[0]
         if currentc != prevc:
-            with open(f'./splitted_index/{currentc}.json') as f:
+            with open(f'./{split_index_dir}{currentc}.json') as f:
                 l = f.readlines()
                 skippointer  = json.loads(l[-1]) # read skippointer first 
         data = [Postings.from_json(d) for d in json.loads(l[skippointer[t]])[t]]  # read only part of file where token is 

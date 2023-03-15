@@ -4,3 +4,5 @@ sortedcontainers
 lxml
 numpy
 simhash
+flask
+flask_cors
