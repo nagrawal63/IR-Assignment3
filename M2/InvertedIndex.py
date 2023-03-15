@@ -8,7 +8,8 @@ import math
 from heapq import merge
 from simhash import Simhash, SimhashIndex
 
-split_index_dir = "splitted_index/"
+split_index_dir = "splitted_index_w_o_simhash/"
+tmp_index = "tmpindex/"
 
 class InvertedIndex:
     def __init__(self) -> None:
@@ -59,7 +60,7 @@ class InvertedIndex:
         self.inverted_index_files.append(invertedIndexFileName)
 
         # Write the index as json lines
-        with open("index/" + invertedIndexFileName, 'w', encoding='utf-8') as f:
+        with open(tmp_index + invertedIndexFileName, 'w', encoding='utf-8') as f:
             for line_num in range(len(self.inverted_index.keys())):
                 json_record = json.dumps({self.inverted_index.items()[line_num][0]: self.inverted_index.items()[line_num][1]}, ensure_ascii=False, cls=CustomEncoder)
                 f.write(json_record + '\n')
@@ -130,9 +131,9 @@ class InvertedIndex:
             file2 = self.inverted_index_files.pop(0)
             finalFileName = file1.rsplit('.', 1)[0] + "_" + file2.rsplit('.', 1)[0] + ".json"
 
-            mergeTwoFiles("index/" + file1, "index/" + file2, "index/" + finalFileName)
-            os.system("rm -rf index/" + file1)
-            os.system("rm -rf index/" + file2)
+            mergeTwoFiles(tmp_index + file1, tmp_index + file2, tmp_index + finalFileName)
+            os.system("rm -rf " + tmp_index + file1)
+            os.system("rm -rf " + tmp_index+ file2)
             self.inverted_index_files.append(finalFileName)
     
     def addTfIdfScores(self, filePath: str, total_docs):
@@ -142,8 +143,8 @@ class InvertedIndex:
         
         print("Adding TfIdf scores to inverted index")
         data = {}
-        with open("index/" + filePath, 'r', encoding='utf-8') as f:
-            with open("index/" + filePath.rsplit('.', 1)[0] + "_tfidf.json", 'w', encoding='utf-8') as out_f:
+        with open(tmp_index + filePath, 'r', encoding='utf-8') as f:
+            with open(tmp_index + filePath.rsplit('.', 1)[0] + "_tfidf.json", 'w', encoding='utf-8') as out_f:
                 for line in f:
                     line_data = json.loads(line.rstrip('\n|\r'))
                     token = list(line_data.keys())[0]
@@ -173,7 +174,7 @@ class InvertedIndex:
     def splitIndexIntoFiles(self, indexFileName=None):
         splitIndexFileNames = []
         if indexFileName == None:
-            indexFileName = "index/" + self.inverted_index_files[0].rsplit('.', 1)[0] + "_tfidf.json"
+            indexFileName = tmp_index + self.inverted_index_files[0].rsplit('.', 1)[0] + "_tfidf.json"
         indexFilePtr = loadInvertedIndexLineByLine(indexFileName)
         data = next(indexFilePtr)
         prevChar = list(data.keys())[0][0]

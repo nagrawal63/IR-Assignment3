@@ -80,6 +80,7 @@ if __name__ == "__main__":
         tokens = process_query(query)
         pages = retrieve_pages(tokens,doc2features)
         for p in pages:
-            print(p,id2doc[str(p[0])]) 
+            # print(p,id2doc[str(p[0])]) 
+            print(id2doc[str(p[0])]) 
         end_time = time.time()
         print("Processing query({}) took {} seconds".format(query,end_time-start_time))
