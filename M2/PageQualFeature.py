@@ -3,6 +3,7 @@ import json
 import re
 # from utils import get_urlhash
 import syslog
+from bs4 import BeautifulSoup
 
 
 class PageQualFeature:
@@ -10,17 +11,18 @@ class PageQualFeature:
         self.pageout = {} 
         self.pagein = {}
         
-    def build(self,root_path):
+    def build(self,root_path):        
         print("[START] BUILD")
         for p in os.listdir(root_path):
             if p[0] !='.':
-                for f in os.listdir(self.root_path+p):
-                    with open(self.root_path+'/'+str(p)+'/'+str(f)) as page_file:
-                        syslog.syslog(f'[START] READING {f}')
+                for f in os.listdir(root_path+p):
+                    with open(root_path+'/'+str(p)+'/'+str(f)) as page_file:
+                        print(f'[START] READING {f}')
                         page = json.load(page_file)
+                        pages = BeautifulSoup(page['content'])
                         syslog.syslog(f'[END] READING {f}')
                         syslog.syslog(f'[START] Extract HyperLinks')
-                        hls = self._extract_hyperlinks(page)
+                        hls = self._extract_hyperlinks(pages)
                         syslog.syslog(f'[END] Extract HyperLinks')
                         syslog.syslog(f'[START] Build pageRankDB')
                         self._build_pagerankdb(page['url'],hls)
@@ -29,8 +31,8 @@ class PageQualFeature:
         print("[START] Cal pagerank " )
         self.cal_pagerank()
         print("[END] Cal pagerank " )
-        self.save_pagefeat()
-        print("[END] Save all features" )
+        #self.save_pagefeat()
+        #print("[END] Save all features" )
     
     
     def is_valid(self, url):
@@ -68,7 +70,7 @@ class PageQualFeature:
                 )
 
     def _extract_hyperlinks(self, soup):
-        return list(set([l['href'] for l in soup.find_all('a', href=True) if len(l['href']) > 3 and self.is_valid(l['href']) ]))
+        return list(set([l['href'] for l in soup.find_all('a', href=True) if len(l['href']) > 3 ]))
     
     def _build_pagerankdb(self,url,hyperlinks):
         #--[TODO] change it to urlhash later
@@ -83,7 +85,7 @@ class PageQualFeature:
             else:
                 self.pagein[h].append(urlhash)
                 
-    def cal_pagerank(self,tol = 1.0e-7):
+    def cal_pagerank(self,tol = 1.0e-7,ld=0.1):
         PR = {p:1/len(self.pageout) for p in self.pageout}
         i = 0 
         while True:
@@ -92,7 +94,7 @@ class PageQualFeature:
             for p in PR:
                 newrank = PR[p]
                 if p in self.pagein:
-                    newrank = sum([PR[ip]/len(self.pageout[ip]) for ip in self.pagein[p] ])
+                    newrank = ld * (1/len(self.pageout)) + (1-ld)*sum([PR[ip]/len(self.pageout[ip]) for ip in self.pagein[p] ])
                 new_PR[p] = newrank
             err = sum([abs(new_PR[n] - PR[n]) for n in PR])
             if err < len(PR)*tol:
