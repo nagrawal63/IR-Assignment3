@@ -18,6 +18,7 @@ directory_name = "DEV"
 urls_visited = set()
 URL_to_docID_map = {}
 docID_to_URL_map = {}
+docID_wordcount_map = defaultdict()
 
 BATCH_SIZE = 4000
 
@@ -47,6 +48,7 @@ def process_data(file_names):
                 soup = BeautifulSoup(file_dict['content'], features="lxml")
                 important_words_set, important_words_tags = find_important_words(soup)
                 tokens = tokenize_content(soup.get_text())
+                docID_wordcount_map[docID] = len(tokens)
                 inverted_index.addDocToInvertedIndex(docId= docID , tokens=tokens , important_words_set = important_words_set,
                                                      important_words_tags = important_words_tags)
                 hls = page_qual_feature._extract_hyperlinks(soup)
@@ -57,10 +59,14 @@ def process_data(file_names):
             inverted_index.offloadIndex()
             batch_size_processed = 0
     print("Processed {} documents".format(docID))
+    store_docID_wordcount_dict()
     inverted_index.mergeInvertedIndexFiles()
     inverted_index.addTfIdfScores(inverted_index.inverted_index_files[0], len(URL_to_docID_map))
     inverted_index.splitIndexIntoFiles()
 
+def store_docID_wordcount_dict():
+    with open("docID_wordcount_map.json", 'w') as f:
+        json.dump(docID_wordcount_map, f)
 
 def find_important_words(soup):
     tags = ["title","h1", "h2", "h3", "b"]
@@ -75,9 +81,10 @@ def find_important_words(soup):
         if sub_text.parent.name in tags:
             tokens = tokenize_content(sub_text)
             for token in tokens:
-                if token not in impWords_tags_map \
-                        or (token in impWords_tags_map and impWords_tags_map[token] > tags_map[sub_text.parent.name]):
-                    impWords_tags_map[token] = tags_map[sub_text.parent.name]
+                if token not in impWords_tags_map:
+                    impWords_tags_map[token] =  dict.fromkeys(ImportanceEnum,0)
+                else:
+                    impWords_tags_map[token][tags_map[sub_text.parent.name]] += 1
             final_tokens += (tokens)
     return set(final_tokens), impWords_tags_map
 
