@@ -50,6 +50,6 @@ def getIndexDataAllTokens(tokens):
                 skippointer  = json.loads(l[-1]) # read skippointer first 
             from InvertedIndex import Postings
             data = [Postings.from_json(d) for d in json.loads(l[skippointer[t]])[t]]  # read only part of file where token is 
-            data_dict[t] = data 
-            prevc = currentc
+        data_dict[t] = data 
+        prevc = currentc
     return [data_dict[t] for t in tokens] # for keeping the original order 
