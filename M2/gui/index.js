@@ -77,29 +77,25 @@ function search(event) {
         let input = document.querySelector('.searchbar').value
         input=input.toLowerCase();
         let x = document.getElementsByClassName('section');
+        let titles = document.getElementsByClassName('title');
         let noresult = document.querySelector('.noresult');
         let list= document.querySelector('.list').childElementCount;
         
         pass_values(input).done(function(response){
             for (i = 0; i < 10; i++) {
                 x[i].text = response[i.toString()];
-                x[i].innerHTML = response[i.toString()];
+                url = response[i.toString()][1];
+                x[i].innerHTML = '<a href="'+url+'">'+url+'</a>';
+                if (response[i.toString()][0] !=''){
+                    titles[i].innerHTML = response[i.toString()][0];}
+                else titles[i].innerHTML =input;
+
             }
         });
-        // for (i = 0; i < x.length; i++) {   
-        //     x[i].innerHTML = pages[i.toString()]        
-        //     // if (!x[i].innerHTML.toLowerCase().includes(input)) {
-        //     //     x[i].style.display="none";
-        //     //     list -= 1;
-        //     // } else {
-        //     //     x[i].style.display="list-item";
-        //     //     list += 1;
-        //     // }
-        // }
 
     
     $( ".section" ).each(function() {
-        $( this ).css( "color", "blue" ).html('<a href="#'+$(this).text()+'">'+$(this).text()+'</a>');
+        $( this ).css( "text-color", "blue" )
     });
 
     if (list === 1) {

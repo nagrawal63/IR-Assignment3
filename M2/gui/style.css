@@ -6,7 +6,11 @@ a{
 a.exception{
     color: white;
 }
-
+a:link, a:visited {
+    color: blue;
+    text-align: center;
+  }
+  
 div {
     display: flex;
     justify-content: center;
@@ -148,6 +152,18 @@ div.middle {
        color: black;
        font-family: 'Roboto', sans-serif;
    }
+   .title {
+    padding-left: 5px;
+    padding-right: 5px;
+    padding-top: 10px;
+    padding-bottom: 10px;
+    text-align: left;
+    font-size:15px;
+    cursor: pointer;
+    color: black;
+    font-weight: 900;
+    font-family: 'Roboto', sans-serif;
+}
 
    .section:hover {
     background-color: rgb(235, 222, 222);

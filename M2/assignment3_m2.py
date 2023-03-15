@@ -18,6 +18,8 @@ with open("./docID_url_map.json") as f:
     id2doc = json.load(f)
 with open('../M1/page_quality_features.json') as f:
     doc2features = json.load(f)
+with open('./dicId_title_map.json') as f:
+    id2title= json.load(f)
 
 def process_query(query):
     query_tokens = tokenize_content(query)
@@ -45,9 +47,9 @@ def merge_inverted_index(datal,doc2features):
             if d.docId in final_page:
                 final_page[d.docId][i] = d.tfidf
             else:
-                final_page[d.docId] = [0] * (len(datal) +1 )  #[len(td)TODO]+1 page features # initialize with zero vector
+                final_page[d.docId] = [0] * (len(datal)+1 )  #[len(td)TODO]+1 page features # initialize with zero vector
                 final_page[d.docId][i] = d.tfidf
-    queryv.extend([0.01])
+    queryv.extend([0.000001])
     for d in final_page:
         final_page[d][-1] = doc2features[str(d)]['pagein']/len(doc2features)
 
@@ -64,7 +66,7 @@ def main():
     query = request.args.get('query')
     tokens = process_query(query)
     pages = retrieve_pages(tokens,doc2features)   
-    return json.dumps({i:id2doc[str(p[0])] for i,p in enumerate(pages)})
+    return json.dumps({i:(id2title[str(p[0])],id2doc[str(p[0])]) for i,p in enumerate(pages)})
     
 if __name__ == "__main__":
     while True:
@@ -80,6 +82,6 @@ if __name__ == "__main__":
         tokens = process_query(query)
         pages = retrieve_pages(tokens,doc2features)
         for p in pages:
-            print(p,id2doc[str(p[0])]) 
+            print(p,id2doc[str(p[0])],doc2features[str(p[0])]) 
         end_time = time.time()
         print("Processing query({}) took {} seconds".format(query,end_time-start_time))
