@@ -17,7 +17,7 @@ from nltk.corpus import stopwords
 
 inverted_index = InvertedIndex()
 page_qual_feature = PageQualFeature()
-directory_name = "DEV"
+directory_name = "../M1/DEV"
 urls_visited = set()
 URL_to_docID_map = {}
 docID_to_URL_map = {}
@@ -64,6 +64,9 @@ def process_data(file_names):
         if batch_size_processed >= BATCH_SIZE:
             inverted_index.offloadIndex()
             batch_size_processed = 0
+    if batch_size_processed != 0:
+        inverted_index.offloadIndex()
+        batch_size_processed = 0
     print("Processed {} documents".format(docID))
     store_docID_wordcount_dict()
     inverted_index.mergeInvertedIndexFiles()
