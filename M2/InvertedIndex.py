@@ -199,7 +199,7 @@ class InvertedIndex:
         print("Adding skip list to splitted index")
         for splitIndexFileName in splittedIndexFiles:
             data = loadInvertedIndexFromFile(splitIndexFileName)
-            tokenMap = {token: (i+1) for i, token in enumerate(data.keys())}
+            tokenMap = {token: i for i, token in enumerate(data.keys())}
             with open(splitIndexFileName, 'a') as f:
                 f.write(json.dumps(tokenMap))
 
