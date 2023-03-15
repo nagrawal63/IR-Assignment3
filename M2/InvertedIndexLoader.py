@@ -50,7 +50,6 @@ def getIndexDataAllTokens(tokens):
                 l = f.readlines()
                 skippointer  = json.loads(l[-1]) # read skippointer first 
         data = [Postings.from_json(d) for d in json.loads(l[skippointer[t]])[t]]  # read only part of file where token is 
-        print(data)
         data_dict[t] = data 
         prevc = currentc
     return [data_dict[t] for t in tokens] # for keeping the original order 
