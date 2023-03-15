@@ -85,7 +85,7 @@ class PageQualFeature:
             else:
                 self.pagein[h].append(urlhash)
                 
-    def cal_pagerank(self,tol = 1.0e-7):
+    def cal_pagerank(self,tol = 1.0e-7,ld=0.1):
         PR = {p:1/len(self.pageout) for p in self.pageout}
         i = 0 
         while True:
@@ -94,7 +94,7 @@ class PageQualFeature:
             for p in PR:
                 newrank = PR[p]
                 if p in self.pagein:
-                    newrank = 0.1 * (1/len(self.pageout)) + 0.9*sum([PR[ip]/len(self.pageout[ip]) for ip in self.pagein[p] ])
+                    newrank = ld * (1/len(self.pageout)) + (1-ld)*sum([PR[ip]/len(self.pageout[ip]) for ip in self.pagein[p] ])
                 new_PR[p] = newrank
             err = sum([abs(new_PR[n] - PR[n]) for n in PR])
             if err < len(PR)*tol:
