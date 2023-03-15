@@ -49,9 +49,9 @@ def merge_inverted_index(datal,doc2features):
             else:
                 final_page[d.docId] = [0] * (len(datal)+1 )  #[len(td)TODO]+1 page features # initialize with zero vector
                 final_page[d.docId][i] = d.tfidf
-    queryv.extend([0.000001])
+    queryv.extend([0.01])
     for d in final_page:
-        final_page[d][-1] = doc2features[str(d)]['pagein']/len(doc2features)
+        final_page[d][-1] = doc2features[str(d)]['pagein']/len(doc2features) 
 
     return sorted({k:dot(queryv,v) for k,v in final_page.items() if 0 not in v}.items(),key=lambda x :x[1],reverse=True) # [TODO] & option adding ? 
 
