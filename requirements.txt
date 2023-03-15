@@ -3,4 +3,5 @@ nltk
 sortedcontainers
 lxml
 numpy
-Flask
+Flask    
+Flask-Cors
