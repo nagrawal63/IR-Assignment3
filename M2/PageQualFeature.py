@@ -92,7 +92,7 @@ class PageQualFeature:
             i +=1 
             new_PR= {}
             for p in PR:
-                newrank = PR[p]
+                newrank = ld * PR[p] # for the page that does not have pagein
                 if p in self.pagein:
                     newrank = ld * (1/len(self.pageout)) + (1-ld)*sum([PR[ip]/len(self.pageout[ip]) for ip in self.pagein[p] ])
                 new_PR[p] = newrank
