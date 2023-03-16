@@ -52,9 +52,9 @@ def process_data(file_names):
                 important_words_set, important_words_tags = find_important_words(soup)
                 tokens = tokenize_content(soup.get_text())
                 docID_wordcount_map[docID] = len(tokens)
-                # bigrams = generate_bigram_tokens(tokenize_content_without_stopwords(soup.get_text()))
+                bigrams = generate_bigram_tokens(tokenize_content_without_stopwords(soup.get_text()))
                 # trigrams = generate_trigram_tokens(tokenize_content_without_stopwords(soup.get_text()))
-                # tokens += bigrams + trigrams
+                tokens = bigrams
                 inverted_index.addDocToInvertedIndex(docId= docID , tokens=tokens , important_words_set = important_words_set,
                                                      important_words_tags = important_words_tags)
                 hls = page_qual_feature._extract_hyperlinks(soup)

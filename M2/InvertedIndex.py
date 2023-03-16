@@ -178,7 +178,7 @@ class InvertedIndex:
         data = next(indexFilePtr)
         prevChar = list(data.keys())[0][0]
         currChar = prevChar
-        fileName = split_index_dir + currChar + ".json"
+        fileName = split_index_dir + currChar + "bigram" + ".json"
         splitIndexFileNames.append(fileName)
         currFile = open(fileName, 'a')
         endOfFile = False
@@ -193,7 +193,7 @@ class InvertedIndex:
 
             if prevChar != currChar:
                 currFile.close()
-                fileName = split_index_dir + currChar + ".json"
+                fileName = split_index_dir + currChar + "bigram" + ".json"
                 currFile = open(fileName, 'a')
                 splitIndexFileNames.append(fileName)
             if data != None:
