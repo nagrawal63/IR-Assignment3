@@ -78,9 +78,6 @@ class InvertedIndex:
             while file1NotEOD  and file2NotEOD:
                 resultDict = {}
                 if tokens1 == tokens2:
-                    # resultDict[tokens1] = list()
-                    # resultDict[tokens1].extend(data1[tokens1])
-                    # resultDict[tokens1].extend(data2[tokens2])
                     resultDict[tokens1] = list(merge(data1[tokens1], data2[tokens2]))
                     try:
                         data1 = next(filePtr1);tokens1 = list(data1.keys())[0]
