@@ -5,12 +5,8 @@ from nltk import word_tokenize
 import nltk
 # nltk.download('stopwords')
 from nltk.stem import PorterStemmer
-<<<<<<< HEAD
 import nltk
 # nltk.download('stopwords')
-=======
-from nltk.corpus import stopwords
->>>>>>> 485c49a (Added anchor text processing)
 import json
 from urllib.parse import urldefrag
 import re
@@ -27,11 +23,8 @@ directory_name = "DEV"
 urls_visited = set()
 URL_to_docID_map = {}
 docID_to_URL_map = {}
-<<<<<<< HEAD
 docID_wordcount_map = defaultdict()
-=======
 anchor_text_dict = {}
->>>>>>> 485c49a (Added anchor text processing)
 
 BATCH_SIZE = 4000
 
@@ -79,14 +72,11 @@ def process_data(file_names):
         inverted_index.offloadIndex()
         batch_size_processed = 0
     print("Processed {} documents".format(docID))
-<<<<<<< HEAD
     store_docID_wordcount_dict()
-=======
 
     anchor_text_dict = transform_anchor_text_dict()
     store_anchor_text(anchor_text_dict)
 
->>>>>>> 485c49a (Added anchor text processing)
     inverted_index.mergeInvertedIndexFiles()
     inverted_index.addTfIdfScores(inverted_index.inverted_index_files[0], len(URL_to_docID_map))
     inverted_index.splitIndexIntoFiles()
