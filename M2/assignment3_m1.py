@@ -3,6 +3,8 @@ import os
 from bs4 import BeautifulSoup
 from nltk import word_tokenize
 from nltk.stem import PorterStemmer
+import nltk
+# nltk.download('stopwords')
 import json
 from urllib.parse import urldefrag
 import re
@@ -11,6 +13,7 @@ from PageQualFeature import PageQualFeature
 import sys
 from InvertedIndex import ImportanceEnum
 from collections import defaultdict
+from nltk.corpus import stopwords
 
 inverted_index = InvertedIndex()
 page_qual_feature = PageQualFeature()
@@ -49,6 +52,9 @@ def process_data(file_names):
                 important_words_set, important_words_tags = find_important_words(soup)
                 tokens = tokenize_content(soup.get_text())
                 docID_wordcount_map[docID] = len(tokens)
+                # bigrams = generate_bigram_tokens(tokenize_content_without_stopwords(soup.get_text()))
+                # trigrams = generate_trigram_tokens(tokenize_content_without_stopwords(soup.get_text()))
+                # tokens += bigrams + trigrams
                 inverted_index.addDocToInvertedIndex(docId= docID , tokens=tokens , important_words_set = important_words_set,
                                                      important_words_tags = important_words_tags)
                 hls = page_qual_feature._extract_hyperlinks(soup)
@@ -99,6 +105,32 @@ def tokenize_content(content):
             continue
         stemmed_tokens.append(ps.stem(token.lower()))
     return stemmed_tokens
+
+def tokenize_content_without_stopwords(content):
+    stop_words = set(stopwords.words('english'))
+    ps = PorterStemmer()
+    content = re.sub(r"[^a-zA-Z0-9\n]", " ", content)
+    tokens = word_tokenize(content)
+    stemmed_tokens = []
+    for token in tokens:
+        if len(token) < 3 or token in stop_words or len(token) > 13 or token.isnumeric():
+            continue
+        stemmed_tokens.append(ps.stem(token.lower()))
+    return stemmed_tokens
+
+def generate_bigram_tokens(tokens):
+    bigram_tokens = []
+    bigrams_list = list(nltk.bigrams(tokens))
+    for bigram_tuple in bigrams_list:
+        bigram_tokens.append(bigram_tuple[0] + " " + bigram_tuple[1])
+    return bigram_tokens
+
+def generate_trigram_tokens(tokens):
+    trigram_tokens = []
+    trigrams_list = list(nltk.trigrams(tokens))
+    for trigram_tuple in trigrams_list:
+        trigram_tokens.append(trigram_tuple[0] + " " + trigram_tuple[1] +  " " + trigram_tuple[2])
+    return trigram_tokens
 
 def store_url_docID_map():
     with open("url_docID_map.json", 'w') as f:
