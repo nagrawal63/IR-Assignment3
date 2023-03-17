@@ -9,6 +9,8 @@ from heapq import merge
 from simhash import Simhash, SimhashIndex
 
 split_index_dir = "splitted_index/"
+bigram_split_index_dir = "bigram_splitted_index/"
+trigram_split_index_dir = "trigram_splitted_index/"
 
 class InvertedIndex:
     def __init__(self) -> None:
@@ -196,7 +198,7 @@ class InvertedIndex:
                 fileName = split_index_dir + currChar + ".json"
                 currFile = open(fileName, 'a')
                 splitIndexFileNames.append(fileName)
-            if data != None:
+            if data != None and len(data[list(data.keys())[0]]) > 3 and len(list(data.keys())[0]) < 35 :
                 json_record = json.dumps(data, ensure_ascii=False, cls=CustomEncoder)
                 currFile.write(json_record + '\n')
         currFile.close()
