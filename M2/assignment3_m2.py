@@ -23,6 +23,8 @@ with open("./docID_url_map.json") as f:
     id2doc = json.load(f)
 with open('./page_quality_features.json') as f:
     doc2features = json.load(f)
+with open('./docId_title_map.json') as f:
+    id2title = json.load(f)
 with open("./anchor_text_dict.json") as f:
     anchorWordFeatures = json.load(f)
 
@@ -95,6 +97,8 @@ def retrieve_pages(tokens, doc2features,type, anchorWordFeatures):
 @app.route('/main', methods=['GET'])
 def main():
     from flask import request
+    import time
+    start =time.time()
     query = request.args.get('query')
     pages = []; pages_trigram=[];pages_bigram = []
     tokens = process_query(query, 3)
@@ -105,10 +109,13 @@ def main():
     if len(pages_trigram) + len(pages_bigram) < 5:
         tokens = process_query(query, 1)
         pages = (retrieve_pages(tokens, doc2features, 1, anchorWordFeatures))
-    pages.update(pages_bigram)
-    pages.update(pages_trigram)
+    pages.extend(pages_bigram)
+    pages.extend(pages_trigram)
     pages = sorted(pages, reverse=True, key = lambda x: x[1])
-    resp = json.dumps({i: id2doc[str(p[0])] for i, p in enumerate(pages)})
+    end = time.time()
+    result = {i: (id2title[str(p[0])],id2doc[str(p[0])]) for i, p in enumerate(pages)}
+    result["time"] = end-start
+    resp = json.dumps(result)
     return resp
 
 

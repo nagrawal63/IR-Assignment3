@@ -83,7 +83,6 @@ function search(event) {
         
         pass_values(input).done(function(response){
             for (i = 0; i < 10; i++) {
-                x[i].text = response[i.toString()];
                 url = response[i.toString()][1];
                 x[i].innerHTML = '<a href="'+url+'">'+url+'</a>';
                 if (response[i.toString()][0] !=''){
@@ -91,6 +90,8 @@ function search(event) {
                 else titles[i].innerHTML =input;
 
             }
+            console.log(x[11]);
+            x[10].innerHTML = response["time"];
         });
 
     
