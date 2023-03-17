@@ -97,6 +97,8 @@ def retrieve_pages(tokens, doc2features,type, anchorWordFeatures):
 @app.route('/main', methods=['GET'])
 def main():
     from flask import request
+    import time
+    start =time.time()
     query = request.args.get('query')
     pages = []; pages_trigram=[];pages_bigram = []
     tokens = process_query(query, 3)
@@ -110,7 +112,10 @@ def main():
     pages.extend(pages_bigram)
     pages.extend(pages_trigram)
     pages = sorted(pages, reverse=True, key = lambda x: x[1])
-    resp = json.dumps({i: (id2title[str(p[0])],id2doc[str(p[0])]) for i, p in enumerate(pages)})
+    end = time.time()
+    result = {i: (id2title[str(p[0])],id2doc[str(p[0])]) for i, p in enumerate(pages)}
+    result["time"] = end-start
+    resp = json.dumps(result)
     return resp
 
 
