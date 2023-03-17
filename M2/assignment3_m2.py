@@ -57,17 +57,16 @@ def merge_inverted_index(datal, doc2features, tokens):
         # queryv[i] = 1/ len(td)
         for d in td:
             if d.docId in final_page:
-                final_page[d.docId][i] = d.tfidf
+                final_page[d.docId][i] = d.tfidf_improved
             else:
                 final_page[d.docId] = [0] * (
                             len(datal) + 1)  # [len(td)TODO]+1 page features # initialize with zero vector
-                final_page[d.docId][i] = d.tfidf
+                final_page[d.docId][i] = d.tfidf_improved
     queryv.extend([0.01])
 
     # Get documents which are target pages of some anchor texts
     joined_query = ' '.join(tokens)
     anchorTargetPages = None
-
 
     for d in final_page:
         final_page[d][-1] = doc2features[str(d)]['pagein'] / len(doc2features)
@@ -93,9 +92,21 @@ def retrieve_pages(tokens, doc2features,type):
 def main():
     from flask import request
     query = request.args.get('query')
-    tokens = process_query(query)
-    pages = retrieve_pages(tokens, doc2features)
-    return json.dumps({i: id2doc[str(p[0])] for i, p in enumerate(pages)})
+    pages = []; pages_trigram=[];pages_bigram = []
+    tokens = process_query(query, 3)
+    pages_trigram = retrieve_pages(tokens, doc2features,3)
+    if len(pages_trigram)<5:
+        tokens = process_query(query, 2)
+        pages_bigram = (retrieve_pages(tokens, doc2features,2))
+    if len(pages_trigram) + len(pages_bigram) < 5:
+        tokens = process_query(query, 1)
+        pages = (retrieve_pages(tokens, doc2features,1))
+    print(query)
+    pages.update(pages_bigram)
+    pages.update(pages_trigram)
+    pages = sorted(pages, reverse=True, key = lambda x: x[1])
+    resp = json.dumps({i: id2doc[str(p[0])] for i, p in enumerate(pages)})
+    return resp
 
 
 if __name__ == "__main__":
