@@ -22,6 +22,7 @@ urls_visited = set()
 URL_to_docID_map = {}
 docID_to_URL_map = {}
 docID_wordcount_map = defaultdict()
+docId_title_map = defaultdict()
 
 BATCH_SIZE = 4000
 
@@ -49,8 +50,9 @@ def process_data(file_names):
                 URL_to_docID_map[extracted_link] = docID
                 docID_to_URL_map[docID] = extracted_link
                 soup = BeautifulSoup(file_dict['content'], features="lxml")
-                important_words_set, important_words_tags = find_important_words(soup)
+                important_words_set, important_words_tags,title = find_important_words(soup)
                 tokens = tokenize_content(soup.get_text())
+                docId_title_map[docID] = title
                 docID_wordcount_map[docID] = len(tokens)
                 # bigrams = generate_bigram_tokens(tokenize_content_without_stopwords(soup.get_text()))
                 # trigrams = generate_trigram_tokens(tokenize_content_without_stopwords(soup.get_text()))
@@ -69,6 +71,7 @@ def process_data(file_names):
         batch_size_processed = 0
     print("Processed {} documents".format(docID))
     store_docID_wordcount_dict()
+    store_docID_title_dict()
     inverted_index.mergeInvertedIndexFiles()
     inverted_index.addTfIdfScores(inverted_index.inverted_index_files[0], len(URL_to_docID_map))
     inverted_index.splitIndexIntoFiles()
@@ -76,6 +79,10 @@ def process_data(file_names):
 def store_docID_wordcount_dict():
     with open("docID_wordcount_map.json", 'w') as f:
         json.dump(docID_wordcount_map, f)
+
+def store_docID_title_dict():
+    with open("docId_title_map.json", 'w') as f:
+        json.dump(docId_title_map, f)
 
 def find_important_words(soup):
     tags = ["title","h1", "h2", "h3", "b"]
@@ -85,9 +92,12 @@ def find_important_words(soup):
     impWords_tags_map= defaultdict()
     tokens = []
     final_tokens = []
+    title = ''
     text = soup.find_all(string=True)
     for sub_text in text:
         if sub_text.parent.name in tags:
+            if sub_text.parent.name == "title":
+                title = sub_text
             tokens = tokenize_content(sub_text)
             for token in tokens:
                 if token not in impWords_tags_map:
@@ -95,7 +105,7 @@ def find_important_words(soup):
                 else:
                     impWords_tags_map[token][tags_map[sub_text.parent.name]] += 1
             final_tokens += (tokens)
-    return set(final_tokens), impWords_tags_map
+    return set(final_tokens), impWords_tags_map,title
 
 
 def tokenize_content(content):
