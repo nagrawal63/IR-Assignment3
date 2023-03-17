@@ -23,9 +23,14 @@ with open("./docID_url_map.json") as f:
     id2doc = json.load(f)
 with open('./page_quality_features.json') as f:
     doc2features = json.load(f)
+<<<<<<< HEAD
 with open('./docId_title_map.json') as f:
     id2title = json.load(f)
 
+=======
+with open("./anchor_text_dict.json") as f:
+    anchorWordFeatures = json.load(f)
+>>>>>>> 920dfdb8134cc95621c01e2650b1b7a868742433
 
 
 def process_query(query, type):
@@ -49,7 +54,7 @@ class ImportanceEnum(IntEnum):
     IMPORTANT = 7
 
 
-def merge_inverted_index(datal, doc2features, tokens):
+def merge_inverted_index(datal, doc2features, tokens, anchorWordFeatures):
     importance_map = {ImportanceEnum.NORMAL: 1, ImportanceEnum.B: 2, ImportanceEnum.H3: 3,
                       ImportanceEnum.H2: 4, ImportanceEnum.H1: 5, ImportanceEnum.TITLE: 6}
     final_page = {}
@@ -69,23 +74,26 @@ def merge_inverted_index(datal, doc2features, tokens):
     # Get documents which are target pages of some anchor texts
     joined_query = ' '.join(tokens)
     anchorTargetPages = None
+    if joined_query in anchorWordFeatures.keys():
+        anchorTargetPages = anchorWordFeatures[joined_query]
 
     for d in final_page:
         final_page[d][-1] = doc2features[str(d)]['pagein'] / len(doc2features)
-
+        if anchorTargetPages and d in anchorTargetPages.keys():
+            final_page[d][-1] *= 100   # Increase pagein value if the page is a target page for an anchor word(form of query)
 
     return sorted({k: dot(queryv, v) for k, v in final_page.items() if 0 not in v}.items(), key=lambda x: x[1],
                   reverse=True)  # [TODO] & option adding ?
 
 
-def retrieve_pages(tokens, doc2features,type):
+def retrieve_pages(tokens, doc2features,type, anchorWordFeatures):
     if type == 3:
         datal = getIndexDataAllTokensTrigram(tokens)
     elif type == 2:
         datal = getIndexDataAllTokensBigram(tokens)
     else:
         datal = getIndexDataAllTokens(tokens)
-    pages = merge_inverted_index(datal, doc2features, tokens)
+    pages = merge_inverted_index(datal, doc2features, tokens, anchorWordFeatures)
     pages = [page for page in pages if str(page[0]) not in blacklist_urls]
     return pages[:10]
 
@@ -96,16 +104,15 @@ def main():
     query = request.args.get('query')
     pages = []; pages_trigram=[];pages_bigram = []
     tokens = process_query(query, 3)
-    pages_trigram = retrieve_pages(tokens, doc2features,3)
+    pages_trigram = retrieve_pages(tokens, doc2features, 3, anchorWordFeatures)
     if len(pages_trigram)<5:
         tokens = process_query(query, 2)
-        pages_bigram = (retrieve_pages(tokens, doc2features,2))
+        pages_bigram = (retrieve_pages(tokens, doc2features, 2, anchorWordFeatures))
     if len(pages_trigram) + len(pages_bigram) < 5:
         tokens = process_query(query, 1)
-        pages = (retrieve_pages(tokens, doc2features,1))
-    print(query)
-    pages.extend(pages_bigram)
-    pages.extend(pages_trigram)
+        pages = (retrieve_pages(tokens, doc2features, 1, anchorWordFeatures))
+    pages.update(pages_bigram)
+    pages.update(pages_trigram)
     pages = sorted(pages, reverse=True, key = lambda x: x[1])
     resp = json.dumps({i: (id2title[str(p[0])],id2doc[str(p[0])]) for i, p in enumerate(pages)})
     return resp
@@ -119,21 +126,23 @@ if __name__ == "__main__":
             id2doc = json.load(f)
         with open('./page_quality_features.json') as f:
             doc2features = json.load(f)
+        with open("./anchor_text_dict.json") as f:
+            anchorWordFeatures = json.load(f)
 
         print("Enter Query:")
         query = input()
         start_time = time.time()
         pages = []; pages_trigram=[];pages_bigram = []
         tokens = process_query(query, 3)
-        pages_trigram = retrieve_pages(tokens, doc2features,3)
+        pages_trigram = retrieve_pages(tokens, doc2features, 3, anchorWordFeatures)
         # print(pages_trigram)
         if len(pages_trigram)<5:
             tokens = process_query(query, 2)
-            pages_bigram = (retrieve_pages(tokens, doc2features,2))
+            pages_bigram = (retrieve_pages(tokens, doc2features, 2, anchorWordFeatures))
             # print(pages_bigram)
         if len(pages_trigram) + len(pages_bigram) < 5:
             tokens = process_query(query, 1)
-            pages = (retrieve_pages(tokens, doc2features,1))
+            pages = (retrieve_pages(tokens, doc2features, 1, anchorWordFeatures))
             # print(pages)
         for p in pages_trigram:
             # print(p,id2doc[str(p[0])])

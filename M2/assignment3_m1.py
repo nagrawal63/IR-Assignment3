@@ -23,6 +23,7 @@ URL_to_docID_map = {}
 docID_to_URL_map = {}
 docID_wordcount_map = defaultdict()
 docId_title_map = defaultdict()
+anchor_text_dict = {}
 
 BATCH_SIZE = 4000
 
@@ -61,6 +62,7 @@ def process_data(file_names):
                                                      important_words_tags = important_words_tags)
                 hls = page_qual_feature._extract_hyperlinks(soup)
                 page_qual_feature._build_pagerankdb(extracted_link,hls)
+                add_to_anchor_text_dict(get_anchor_words(soup))
                 docID += 1
                 batch_size_processed+=1
         if batch_size_processed >= BATCH_SIZE:
@@ -72,6 +74,8 @@ def process_data(file_names):
     print("Processed {} documents".format(docID))
     store_docID_wordcount_dict()
     store_docID_title_dict()
+    anchor_text_dict = transform_anchor_text_dict()
+    store_anchor_text(anchor_text_dict)
     inverted_index.mergeInvertedIndexFiles()
     inverted_index.addTfIdfScores(inverted_index.inverted_index_files[0], len(URL_to_docID_map))
     inverted_index.splitIndexIntoFiles()
@@ -107,6 +111,48 @@ def find_important_words(soup):
             final_tokens += (tokens)
     return set(final_tokens), impWords_tags_map,title
 
+def get_anchor_words(soup):
+    anchor_text_dict = {} # stores the following dict -> {token: {link:freq}}
+    for tags in soup.find_all("a"):
+        link, _ = urldefrag(tags.get('href'))
+        tokens = " ".join(tokenize_content_without_stopwords(tags.text.strip()))
+        token_hashmap = {tokens: 1}
+        
+        if page_qual_feature.is_valid(link):
+            for token, freq in token_hashmap.items():
+                if token not in anchor_text_dict.keys():
+                    anchor_text_dict[token] = {link: freq}
+                else:
+                    if link not in anchor_text_dict[token].keys():
+                        anchor_text_dict[token][link] = freq
+                    else:
+                        anchor_text_dict[token][link] += freq
+    return anchor_text_dict
+
+def add_to_anchor_text_dict(new_anchor_texts, anchor_text_dict = anchor_text_dict):
+    for token in new_anchor_texts.keys():
+        if token not in anchor_text_dict.keys():
+            anchor_text_dict[token] = new_anchor_texts[token]
+        else:
+            for link,freq in new_anchor_texts[token].items():
+                if link not in anchor_text_dict[token].keys():
+                    anchor_text_dict[token][link] = freq
+                else:
+                    anchor_text_dict[token][link] += freq
+
+def transform_anchor_text_dict(anchor_text_dict = anchor_text_dict, conversion_map = URL_to_docID_map):
+    docId_to_anchor_map = {}
+    for k, v in anchor_text_dict.items():
+        docId_to_anchor_map[k] = {str(conversion_map[link.replace("http://", "https://")]):freq for link, freq in v.items() if link.replace("http://", "https://") in conversion_map.keys()}
+
+        # Remove token from dictionary if no links for that token were in the conversion map
+        if not docId_to_anchor_map[k]:
+            del docId_to_anchor_map[k]
+    return docId_to_anchor_map
+
+def store_anchor_text(anchor_text_dict):
+    with open("anchor_text_dict.json", 'w') as f:
+        json.dump(anchor_text_dict, f)
 
 def tokenize_content(content):
     ps = PorterStemmer()
