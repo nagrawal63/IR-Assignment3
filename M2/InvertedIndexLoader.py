@@ -77,10 +77,13 @@ def getIndexDataAllTokens(tokens):
             with open(f'./splitted_index/{currentc}.json') as f:
                 l = f.readlines()
                 skippointer  = json.loads(l[-1]) # read skippointer first 
+        prevc = currentc
+        if(t not in skippointer.keys()):
+            continue
         data = [Postings.from_json(d) for d in json.loads(l[skippointer[t]])[t]]  # read only part of file where token is 
         data_dict[t] = data 
-        prevc = currentc
-    return [data_dict[t] for t in tokens] # for keeping the original order
+    # return [data_dict[t] for t in tokens] # for keeping the original order
+    return list(data_dict.values())
 
 def getIndexDataAllTokensBigram(tokens):
     from InvertedIndex import Postings
@@ -93,10 +96,13 @@ def getIndexDataAllTokensBigram(tokens):
             with open(f'./bigram_splitted_index/{currentc}.json') as f:
                 l = f.readlines()
                 skippointer  = json.loads(l[-1]) # read skippointer first
+        prevc = currentc
+        if(t not in skippointer.keys()):
+            continue
         data = [Postings.from_json(d) for d in json.loads(l[skippointer[t]])[t]]  # read only part of file where token is
         data_dict[t] = data
-        prevc = currentc
-    return [data_dict[t] for t in tokens] # for keeping the original order
+    # return [data_dict[t] for t in tokens] # for keeping the original order
+    return list(data_dict.values())
 
 def getIndexDataAllTokensTrigram(tokens):
     from InvertedIndex import Postings
@@ -109,7 +115,10 @@ def getIndexDataAllTokensTrigram(tokens):
             with open(f'./trigram_splitted_index/{currentc}.json') as f:
                 l = f.readlines()
                 skippointer  = json.loads(l[-1]) # read skippointer first
+        prevc = currentc
+        if(t not in skippointer.keys()):
+            continue
         data = [Postings.from_json(d) for d in json.loads(l[skippointer[t]])[t]]  # read only part of file where token is
         data_dict[t] = data
-        prevc = currentc
-    return [data_dict[t] for t in tokens] # for keeping the original order
+    # return [data_dict[t] for t in tokens] # for keeping the original order
+    return list(data_dict.values())
